@@ -320,14 +320,17 @@ class Harness(unittest.TestCase):
         self.assertEqual(demo._demo_harness(1e9, "/api/harness/file")[0], 404)
         d["agents"][1]["vd"]["vp"]["pipe"] = "<x>"
         d["mcps"][0]["vd"] = {"lvl": "<bad>", "why": "mcp_fail", "id": "v9"}   # unknown lvl is ignored, never reaches a class
-        # R3: Claude Code skill/MCP rows moved to the Tools list, so count over the whole view (Config map + list): every count has a row.
+        # R3: Claude Code skill/MCP rows live in the Tools tab list, so count over both views (Harness «Config map» fold + list): every count has a row.
         from sidereus import demo_tools
         _, tl = demo_tools._demo_tools(1e9, "/api/tools", "")
-        h = _js_tools("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; TOOLS = %s; toolsAt = NOW;"
-                      " const box = {innerHTML: '', querySelector(){ return null; }}; paintTools(box); console.log(JSON.stringify(box.innerHTML))"
-                      % (json.dumps(d), json.dumps(tl)))
+        hh, h = _js_tools("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; TOOLS = %s; toolsAt = NOW;"
+                          " const box = {innerHTML: '', querySelector(){ return null; }}; paintTools(box); console.log(JSON.stringify([hnHtml(), box.innerHTML]))"
+                          % (json.dumps(d), json.dumps(tl)))
+        self.assertIn('data-hnvdgo=bad', h)   # the list repeats the check line so stepping continues there
+        self.assertNotIn("hncfgw", h)
+        h = hh.split("class=\"hncfgw\">", 1)[1] + h   # rows only: the fold, then the list
         self.assertRegex(h, r'<tr class="tvwr hnvd hnvd-bad" data-tid="mcp:000000000007" tabindex=0 data-hnvd="v\d+" data-hnvdl=bad>')
-        self.assertLess(h.index("점검 결과"), h.index("훅 흐름"))
+        self.assertLess(hh.index("class=hnvdl>"), hh.index("훅 흐름"))
         self.assertIn('data-hnvdgo=bad title="다음 항목으로 이동">문제 <b>%d</b>' % vc["bad"], h)
         self.assertIn('data-hnvdgo=check', h)
         self.assertIn("정상 %d" % vc["ok"], h)
@@ -539,7 +542,7 @@ class Harness(unittest.TestCase):
         with open(os.path.join(ROOT, "web", "js", "48-pipeline.js"), encoding="utf-8") as f:
             pl = f.read()
         self.assertNotIn("TKVIEW", tk)   # Tools/Connections moved to the pipeline tab
-        self.assertIn("const PLVIEWS = ['pipe', 'harness', 'tools', 'conn'];", pl)
+        self.assertIn("const PLVIEWS = ['pipe', 'harness'];", pl)   # R3: Tools/Session tools moved to their own tab (47a)
         self.assertNotIn("paintHarness", tk)
         self.assertIn("data-plv", pl)
         self.assertIn("FEATS.harness === false", pl)   # toggle hidden when the feature is off
@@ -551,13 +554,29 @@ class Harness(unittest.TestCase):
         pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc', 'cx'];" % json.dumps(dict(self._VIEW, report=self._REPORT, guards=self._GUARDS))
         return _js(pre + js)
 
-    def test_r2_no_config_map_in_harness(self):
-        h = self._view(" console.log(JSON.stringify(hnHtml()))")
-        for gone in ("hncfg", "구성 지도", "hnflow", "규칙 파일", "에이전트 ↔ 파이프라인", "data-hntools"):
-            self.assertNotIn(gone, h)
-        self.assertLess(h.index("class=hnrep>"), h.index("hnread"))   # report → «How to read this» → «Gate runs»
-        self.assertLess(h.index("hnread"), h.index("hnruns"))
+    def test_r3_config_map_fold_in_harness(self):
+        h, alone = self._view(" console.log(JSON.stringify([hnHtml(), hnCfgHtml(PLS.proj)]))")
+        self.assertEqual(h.count("class=\"hncfgw\">"), 1)   # one fold, no second .hnw inside the report
+        self.assertEqual(h.count("hnw"), 1)
+        self.assertEqual(h.count("<details class=hncfg"), 1)
+        self.assertEqual(h.count("class=hnplat"), 1)   # one platform switch, one check line
+        self.assertEqual(h.count("class=hnvdl>"), 1)
+        for t in ("구성 지도", "data-hnflow", "규칙 파일", "에이전트 ↔ 파이프라인"):
+            self.assertIn(t, h)
+        fold = h.split("class=\"hncfgw\">", 1)[1].split("<details class=\"hnmore hnread\"", 1)[0]
+        same = alone.split("</summary>", 1)[1]   # stand-alone body minus its own switch + check line
+        same = same.split("class=hnvdl>", 1)[1].split("</div>", 1)[1]
+        self.assertEqual(fold.split("</summary>", 1)[1], same)   # same rows as the stand-alone map
         self.assertLess(h.index("data-hnplat"), h.index("class=hnrep>"))   # platform switch stays on top
+        self.assertLess(h.index("class=hnrep>"), h.index("class=hnvdl>"))   # report → check line → Config map → «How to read this» → «Gate runs»
+        self.assertLess(h.index("class=hnvdl>"), h.index("class=\"hncfgw\">"))
+        self.assertLess(h.index("class=\"hncfgw\">"), h.index("hnread"))
+        self.assertLess(h.index("hnread"), h.index("hnruns"))
+
+    def test_r3_shown_covers_tools_tab(self):
+        r = _js(" var TLVIEW = 'tools'; const a = hnShown(); mainView = 'tools'; const b = hnShown(); TLVIEW = 'conn'; const c = hnShown();"
+                " mainView = 'pipe'; PLVIEW = 'pipe'; console.log(JSON.stringify([a, b, c, hnShown()]))")
+        self.assertEqual(r, [True, True, False, False])   # Harness, Tools tab list; not Session tools or Pipelines
 
     def test_r4_verdict_line_stays_in_report(self):
         h = self._view(" console.log(JSON.stringify(hnHtml()))")

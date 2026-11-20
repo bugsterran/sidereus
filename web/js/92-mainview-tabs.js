@@ -8,8 +8,10 @@ const TAB_ICO = {
   hist: '<path d="M2.8 8A5.2 5.2 0 1 0 4.3 4.3"/><path d="M2.5 2.3v2.5H5"/><path d="M8 5v3l2 1.5"/>',
   retro: '<path d="M2.5 2.5v11h11"/><path d="M5 10.5l2.5-3 2 1.5 3.5-4.5"/>',
   pipe: '<rect x="1.5" y="3.5" width="4" height="4" rx=".8"/><rect x="10.5" y="3.5" width="4" height="4" rx=".8"/><path d="M5.5 5.5h5M8.8 4l1.5 1.5L8.8 7"/><path d="M12.5 7.5v3.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5V7.5"/>',
+  tools: '<path d="M9.8 2.7a3 3 0 0 0-3.6 3.9L2.6 10.2a1.3 1.3 0 0 0 1.9 1.9l3.6-3.6a3 3 0 0 0 3.9-3.6L10 6.9 8.7 6.6 8.4 5.3z"/>',
 };
 // Tab -> feature manifest id: the tab is hidden while /api/state.features says that feature is off (FEATS, 95-poll.js).
+// ⚠No 'tools' entry: the Tools tab stays reachable with the pipeline feature off.
 const TAB_FEAT = {pipe: 'pipeline', retro: 'retro'};
 let FEATS = {};
 const tabIco = k => TAB_ICO[k] ? '<svg class=mvic viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"'
@@ -67,7 +69,7 @@ function buildMv(){
   try{ railTitle(); }catch(e){ softErr('railTitle', e); }   // #vtitle follows the active tab (92d-rail.js)
 }
 function mvLab(k){
-  return ({time: T('Timeline'), chat: T('Chat'), struct: T('Structure'), br: T('Branches'), pipe: T('Pipelines'), token: T('Tokens'), hist: T('History'), retro: T('Insights')})[k] || '';
+  return ({time: T('Timeline'), chat: T('Chat'), struct: T('Structure'), br: T('Branches'), pipe: T('Pipelines'), token: T('Tokens'), hist: T('History'), retro: T('Insights'), tools: T('Tools')})[k] || '';
 }
 // Up/Down (vertical rail) and Left/Right move between tabs (tablist pattern, wraps around); the move also switches the view.
 function mvKey(e){
@@ -146,6 +148,7 @@ function bootView(){
   if(mainView === 'hist'){   paintHist();   loadHist(false);  return; }
   if(mainView === 'retro'){  paintRetro();  loadRetro(false); return; }
   if(mainView === 'pipe'){   plPaint(); return; }
+  if(mainView === 'tools'){  tlPaint(); return; }
 }
 // ★All tabs share one #feed scroller, so its scrollTop leaked across tabs (2026-09-24 audit: chat at 4136 → token opened mid-table at 1965).
 //   Remember it per tab in memory; a tab never visited opens at the top. Chat keeps its own stick-to-bottom (toBottom below).
@@ -174,16 +177,18 @@ function mvScrollBack(){
   };
   if(want) requestAnimationFrame(tick); else done();
 }
+// A deliberate in-tab jump (47b hnVdStep) ends the pending restore; otherwise the re-apply loop above scrolls it back off-screen.
+function mvScrollStop(){ ++mvScrollSeq; }
 // URL hash <-> tab id (/#pipelines opens Pipelines). ⚠Declarations with the map inside: 05-i18n calls mvHashKey before this file runs.
 function mvHashKey(h){
-  const m = {pipelines: 'pipe', structure: 'struct', timeline: 'time', chat: 'chat', branches: 'br', tokens: 'token', history: 'hist', insights: 'retro'};
+  const m = {pipelines: 'pipe', structure: 'struct', timeline: 'time', chat: 'chat', branches: 'br', tokens: 'token', history: 'hist', insights: 'retro', tools: 'tools'};
   const k = String(h || '').replace(/^#/, '').toLowerCase();
   if(Object.prototype.hasOwnProperty.call(m, k)) return m[k];
   for(const n in m){ if(m[n] === k) return k; }
   return null;
 }
 function mvHashOf(k){
-  const m = {pipe: 'pipelines', struct: 'structure', time: 'timeline', chat: 'chat', br: 'branches', token: 'tokens', hist: 'history', retro: 'insights'};
+  const m = {pipe: 'pipelines', struct: 'structure', time: 'timeline', chat: 'chat', br: 'branches', token: 'tokens', hist: 'history', retro: 'insights', tools: 'tools'};
   return Object.prototype.hasOwnProperty.call(m, k) ? m[k] : '';
 }
 // ⚠replaceState, not location.hash: no history entry per tab switch; popups (diff/work/brdiff) own their URL and skip it.
@@ -198,7 +203,7 @@ function setMainView(v){
   if(feed) mvScroll[_prev] = feed.scrollTop;
   // ⚠'work' is a popup window now (wkPopup); old saved 'work'/'fail' (tabs removed) and unknown values fall back to the timeline.
   mainView = (v === 'chat' || v === 'time' || v === 'br'
-              || v === 'token' || v === 'struct' || v === 'hist' || v === 'retro' || v === 'pipe') ? v : 'time';
+              || v === 'token' || v === 'struct' || v === 'hist' || v === 'retro' || v === 'pipe' || v === 'tools') ? v : 'time';
   // ⚠Leaving the structure tab **stops playback** — otherwise it redraws an invisible screen every 0.6s
   if(mainView !== 'struct') strStop();
   document.documentElement.dataset.mv = mainView;   // CSS hook: html[data-mv=struct] lifts the .wrap width cap
@@ -243,6 +248,11 @@ function setMainView(v){
   if(mainView === 'pipe'){
     agView = 'modal';
     buildMv(); plPaint(); mvScrollBack();
+    return;
+  }
+  if(mainView === 'tools'){
+    agView = 'modal';
+    buildMv(); tlPaint(); mvScrollBack();
     return;
   }
   // chat (the old 'work' branch is gone — the work log is the #wkm modal now)

@@ -1,4 +1,4 @@
-// Side column of the «Connections» view (47k): state tiles (click = filter), this session's calls, server detail with
+// Side column of the «Session tools» view (47k): state tiles (click = filter), this session's calls, server detail with
 // [Task][Diagnose][Restart][Reconnect], request log.
 // ⚠Rule 7: composed text leaves only through «Confirm — send» (mcpcSend); «Reconnect» shows steps + Copy and sends nothing.
 // ⚠Rule 1: the wire text carries the server name and the person's one-line note only — no state, error code, count or scope.

@@ -1,4 +1,4 @@
-// Tokens tab = usage only. ⚠Tools/Connections moved to Pipelines (48 PLVIEWS); only 05 reads an old `sidereus.tkview` (before this delete), 48 reads 05 mvTkMoved.
+// Tokens tab = usage only. ⚠Tools/Session tools moved to the Tools tab (47a TLVIEWS); only 05 reads an old `sidereus.tkview` (before this delete), 47a reads 05 mvToolsMoved.
 if(lsGet('sidereus.tkview', null) !== null) lsDel('sidereus.tkview');
 function tkBar(v, mx, col){
   return '<span class=brb><i style="width:'

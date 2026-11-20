@@ -1,14 +1,21 @@
-"""URL hash <-> main tab (web/js/92 mvHashKey/mvHashOf/mvHashSync, 05-i18n mainView boot order)."""
+"""URL hash <-> main tab (web/js/92 mvHashKey/mvHashOf/mvHashSync, 05-i18n mainView boot order).
+R4: old Tokens / Pipelines › Tools/Connections state lands on the «Tools» tab (05 mvToolsMoved -> 47a TLVIEW, 48 rewrites plview)."""
 import json
+import os
 import re
 import shutil
 import subprocess
 import unittest
 
-from tests._load import js_all, js_fn
+from tests._load import ROOT, js_all, js_fn
 from tests._node import node_e
 
-TABS = ["pipe", "struct", "time", "chat", "br", "token", "hist", "retro"]
+def _src(name):
+    with open(os.path.join(ROOT, "web", "js", name), encoding="utf-8") as f:
+        return f.read()
+
+
+TABS = ["pipe", "struct", "time", "chat", "br", "token", "hist", "retro", "tools"]
 
 
 def run(body):
@@ -20,13 +27,13 @@ def run(body):
 
 
 def boot(hash_, own=None, ui=None, popup=False, full=False):
-    """Evaluate the 05-i18n mainView IIFE against a stubbed location/storage; full = [mainView, mvTkMoved, tabSet calls]."""
+    """Evaluate the 05-i18n mainView IIFE against a stubbed location/storage; full = [mainView, mvToolsMoved, tabSet calls]."""
     iife = re.search(r"^let mainView = \(\(\) => \{.*?\}\)\(\);", js_all(), re.S | re.M).group(0)
     body = ("const location = {hash: %s}, UIS = %s, OWN = %s, SETS = [];\n" % (json.dumps(hash_), json.dumps(ui or {}), json.dumps(own or {}))
-            + "const ISPOP = %s, ISWP = false, ISBP = false;\nlet mvTkMoved = '';\n" % ("true" if popup else "false")
+            + "const ISPOP = %s, ISWP = false, ISBP = false;\nlet mvToolsMoved = '';\n" % ("true" if popup else "false")
             + "function tabOwn(k){ return Object.prototype.hasOwnProperty.call(OWN, k) ? OWN[k] : null; }\n"
             + "function tabSet(k, v){ SETS.push([k, v]); return true; }\n"
-            + iife + "\nprocess.stdout.write(JSON.stringify(%s));" % ("[mainView, mvTkMoved, SETS]" if full else "mainView"))
+            + iife + "\nprocess.stdout.write(JSON.stringify(%s));" % ("[mainView, mvToolsMoved, SETS]" if full else "mainView"))
     return run(body)
 
 
@@ -57,19 +64,58 @@ class MainViewHash(unittest.TestCase):
     def test_popup_ignores_hash(self):
         self.assertEqual(boot("#structure", own={"mbMainView": "chat"}, popup=True), "chat")
 
-    def test_r3_stored_tokens_tools_lands_on_pipelines(self):
+    def test_r4_stored_tokens_tools_lands_on_tools(self):
         self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools"}, full=True),
-                         ["pipe", "tools", [["mbMainView", "pipe"]]])
-        self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "conn"}, full=True), ["pipe", "conn", [["mbMainView", "pipe"]]])
+                         ["tools", "tools", [["mbMainView", "tools"]]])
+        self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "conn"}, full=True), ["tools", "conn", [["mbMainView", "tools"]]])
 
-    def test_r3_usage_and_other_tabs_unchanged(self):
+    def test_r4_tokens_redirect_with_pipelines_off(self):
+        self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools", "mbTabsOff": '["pipe"]'}, full=True),
+                         ["tools", "tools", [["mbMainView", "tools"]]])
+
+    def test_r4_stored_pipelines_tool_view_lands_on_tools(self):
+        self.assertEqual(boot("", ui={"mbMainView": "pipe", "sidereus.plview": "conn"}, full=True),
+                         ["tools", "conn", [["mbMainView", "tools"]]])
+        self.assertEqual(boot("#pipelines", ui={"sidereus.plview": "tools"}, full=True),
+                         ["tools", "tools", [["mbMainView", "tools"]]])
+        self.assertEqual(boot("", own={"mbMainView": "pipe"}, ui={"sidereus.plview": "conn"}, full=True),
+                         ["tools", "conn", [["mbMainView", "tools"]]])
+
+    def test_r4_end_to_end_tlview_and_plview_rewrite(self):
+        """05 boot -> 47a TLVIEW init -> 48 PLVIEW init on one store: the matching Tools view opens and plview becomes 'pipe'."""
+        src = {n: _src(n) for n in ("47a-tools-tab.js", "48-pipeline.js")}
+        tl = re.search(r"^const TLVIEWS = .*?^\}\)\(\);", src["47a-tools-tab.js"], re.S | re.M).group(0)
+        pl = re.search(r"^const PLVIEWS = .*?^\}\)\(\);", src["48-pipeline.js"], re.S | re.M).group(0)
+        iife = re.search(r"^let mainView = \(\(\) => \{.*?\}\)\(\);", js_all(), re.S | re.M).group(0)
+        for hash_, ui, want in (("#pipelines", {"sidereus.plview": "tools"}, "tools"),
+                                ("", {"mbMainView": "pipe", "sidereus.plview": "conn"}, "conn"),
+                                ("", {"mbMainView": "token", "sidereus.tkview": "conn", "mbTabsOff": '["pipe"]'}, "conn")):
+            body = ("const location = {hash: %s}, UIS = %s, SETS = [];\n" % (json.dumps(hash_), json.dumps(ui))
+                    + "const ISPOP = false, ISWP = false, ISBP = false;\nlet mvToolsMoved = '';\n"
+                    + "function tabOwn(k){ return null; } function tabSet(k, v){ SETS.push([k, v]); return true; }\n"
+                    + "function lsGet(k, d){ return Object.prototype.hasOwnProperty.call(UIS, k) ? UIS[k] : d; } function lsSet(k, v){ UIS[k] = v; }\n"
+                    + iife + "\n" + tl + "\n" + pl + "\n"
+                    + "process.stdout.write(JSON.stringify([mainView, TLVIEW, PLVIEW, UIS['sidereus.plview'] || null]));")
+            plv = "pipe" if "sidereus.plview" in ui else None
+            self.assertEqual(run(body), ["tools", want, "pipe", plv], (hash_, ui))
+
+    def test_r4_usage_and_other_tabs_unchanged(self):
         self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "use"}, full=True), ["token", "", []])
         self.assertEqual(boot("#tokens", full=True), ["token", "", []])   # bare #tokens with no stored view still opens Usage
         self.assertEqual(boot("", ui={"mbMainView": "time", "sidereus.tkview": "tools"}, full=True), ["time", "", []])
+        self.assertEqual(boot("", ui={"mbMainView": "time", "sidereus.plview": "conn"}, full=True), ["time", "", []])
+        self.assertEqual(boot("#pipelines", ui={"sidereus.plview": "harness"}, full=True), ["pipe", "", []])
+        self.assertEqual(boot("#tools", full=True), ["tools", "", []])
 
-    def test_r3_pipelines_off_keeps_token(self):
-        self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools", "mbTabsOff": '["pipe"]'}, full=True),
-                         ["token", "", []])
+    def test_r1_tools_tab_is_last_and_keeps_digits(self):
+        """Shortcut digit = rail position (92 buildMv kbN): the new tab goes last so every older tab keeps its digit."""
+        mp = _src("90b-mypref.js")
+        tabs = json.loads(re.search(r"^const MP_TABS = (\[[^\]]*\]);", mp, re.M).group(1).replace("'", '"'))
+        self.assertEqual(tabs, ["pipe", "time", "struct", "br", "token", "hist", "retro", "chat", "tools"])
+        mv = _src("92-mainview-tabs.js")
+        self.assertNotRegex(re.search(r"^const TAB_FEAT = .*$", mv, re.M).group(0), r"tools")   # reachable with Pipelines off
+        self.assertIn("tools: T('Tools')", mv)
+        self.assertIn("|| v === 'tools') ? v : 'time'", mv)
 
     def test_sync_uses_replace_state_and_skips_popups(self):
         tpl = ("let mainView = 'br'; const ISPOP = %s, ISWP = false, ISBP = false, calls = [];\n"

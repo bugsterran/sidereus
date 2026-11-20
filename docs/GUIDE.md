@@ -80,7 +80,8 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - «After push (CI)» (`gh run watch`) appears once the evidence hook has recorded a `gh run watch <id> --exit-status` (or `gh run view … --exit-status`) result; a red CI run fixed by a later green one is an incident card like the others. «Holding: CI streak n/5» counts the newest green CI runs in a row; a red run resets it. Sidereus never calls `gh` or GitHub itself.
 - A «A person» card shows the pipeline name, when the run ended, the commits made in that run and the `tests/` files those commits touched («test that now guards it»); none = «no guarding test». If git could not be read it says «commits unavailable».
 - One card per catch, newest first: red run (time · hash · exit code · failures) → fix commits → green run → held/reverted. A checkpoint that ran but caught nothing is one quiet card «ran n times, caught 0».
-- «Check results» under the cards counts flagged config rows; click «problems» / «to check» to step through them in Pipelines › Tools («Config map», and for Claude Code the skill and MCP rows of the list).
+- «Check results» under the cards counts flagged config rows; click «problems» / «to check» to step through them: the rows of «Config map» below, then for Claude Code the skill and MCP rows of the [Tools tab](#tools-tab) list (the step switches to that tab).
+- «Config map» (folded, open state remembered; opens by itself when the check found problems) shows the project's hook flow, rule files and agents ↔ pipelines, plus MCP servers and skills for Codex, Gemini and pi. For Claude Code those two are rows of the Tools tab list.
 - Hook rows can carry two cost flags from hook-run records of the covered period. Slow means one event and subject averaged 1000 ms or more per firing; the row shows the average and the run count, and when two or more hooks share that event and subject it says how many hooks the time combines. No visible effect means 50 or more firings (the threshold the server uses) that never blocked and never printed anything. Side effects such as file writes are not visible here, so that flag is a prompt to check, not proof the hook is useless. A hook that telemetry saw fire but that has no cost record shows a muted line saying time and effect are not measured yet; it is not a verdict and never reads as clean.
 - «Remove» on a user or project hook chip in «Config map» previews the settings file with only that entry taken out; «Apply» backs the file up to `tool-trash/` and writes it, then the result line names the backup. Plugin hooks have «How to turn off» instead: the plugin name and `/plugin disable <name>` to copy. Plugin files are never written.
 - «Next step» (folded, under a flagged config row, a «Re-fixed» / «Reverted» / «Unverified (uncommitted)» card or a «Required gate skipped» chip): «Meaning», «Why it matters», «Who acts» (yourself · hand to an AI session · owner decision) and «Next step», one line each, from `docs/verdicts/<id>.md`. «Yourself» names one command or setting (e.g. `/hooks`); «Owner decision» adds «Safe to ignore when»; «Hand to an AI session» has «Draft instruction»: preview the text (verdict id, file, counts — no conversation content; names a matching pipeline such as `sidereus-bugfix` when the project has it), pick a session, «Confirm — send» relays it through the mailbox. Sidereus fixes nothing itself.
@@ -95,16 +96,18 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 
 ⚠ Without Claude Code telemetry, hooks that print nothing leave no record: «no record» does not mean «never ran». With telemetry on ([CONFIG.md](CONFIG.md)), every Claude Code hook gets a full run count, and one that ran 0 times over 3+ covered days is flagged «did not run in N days».
 
-### Pipelines › Tools
+## Tools tab
 
-Pick **Tools** in the view switch («Pipelines | Harness report | Tools | Connections»). It stays there when the Harness report is turned off. A saved Token › Tools view or old link opens here once.
+The **Tools** tab (last in the tab row, `/#tools`) has its own view switch «Tools | Session tools». A view saved, or linked, from where these views used to be (the Tokens or Pipelines tab) opens the matching view here once.
 
-- Skills, agents, commands, MCP servers and hooks with 30-day use; «Config map» (folded, open state remembered) on top shows the pipeline project's hook flow, rule files and agents ↔ pipelines (plus MCP servers and skills for Codex, Gemini and pi); click a «problems» / «to check» count to step through.
+### Tools
+
+- Skills, agents, commands, MCP servers and hooks with 30-day use. A «Check results» line above the list counts flagged config rows; click «problems» / «to check» to step through them. «Config map» is in the [Harness report](#harness-report-did-the-work-come-out-right).
 - For Claude Code, a skill used by a pipeline stage shows a «pipeline · stage» chip in its row, and a flagged skill or MCP server row carries its check result underneath. A skill a stage names but that is not installed is listed at the end of «Skills» as «not installed».
 
-### Pipelines › Connections
+### Session tools
 
-Pick **Connections** in the same switch to see what one session can reach: MCP servers, skills, agents and hooks. A saved Token › Connections view or old link opens here once.
+Pick **Session tools** in the same switch to see what one session can reach: MCP servers, skills, agents and hooks.
 
 - The strip on top lists live sessions from every CLI. The picked session sits in the centre of the orbit, with one node per MCP server it can load (user, project for its folder, plugin). claude.ai connectors fold into one node; click it to open them as an outer ring. The orbit fills the window height; when there are more servers than fit on a ring, nodes spread over a staggered grid around the centre (the view grows and scrolls rather than overlapping names).
 - Each node shows that session's own state: **Connected** (green), **Failed** (red, error code only), **Login needed** (a connector that offers only its sign-in tools) and **Unknown** (grey, no record yet). Edge width follows the session's call count, and a call in the last 15 minutes draws moving dots (still when reduced motion is on).

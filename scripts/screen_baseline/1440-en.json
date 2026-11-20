@@ -8,7 +8,8 @@
    "Tokens",
    "History",
    "Insights",
-   "Chat"
+   "Chat",
+   "Tools"
   ],
   "tab:pipe": [
    "Pipelines",
@@ -560,8 +561,6 @@
    "#t ago"
   ],
   "tab:token": [
-   "Usage",
-   "Tools",
    "#t ago",
    "Weekly tokens",
    "Last #t · by project",
@@ -1225,6 +1224,41 @@
    "search",
    "# post",
    "#t ago"
+  ],
+  "tab:tools": [
+   "Tools",
+   "Session tools",
+   "Tool list · #-day use",
+   "Check results",
+   "problems #",
+   "to check #",
+   "ok #",
+   "≈Tokens are estimated from file size · click a row to view its content",
+   "Skills",
+   "# · ≈#K tokens",
+   "Scope Name Path ≈Tokens Uses (#t) Flags Status",
+   "user release-notes release · 노트 ~/.claude/skills/release-notes/SKILL.md # # on",
+   "project acme-web release-note ~/src/acme-web/.claude/skills/release-note/SKILL.md # — unusedsimilar on",
+   "Agents",
+   "# · ≈#K tokens",
+   "Scope Name Path ≈Tokens Uses (#t) Flags Status",
+   "user code-reviewer ~/.claude/agents/code-reviewer.md # # on",
+   "project billing-api test-writer ~/src/billing-api/.claude/agents/test-writer.md # # off",
+   "Commands",
+   "# · ≈# tokens",
+   "Scope Name Path ≈Tokens Uses (#t) Flags Status",
+   "user ship ~/.claude/commands/ship.md # # on",
+   "MCP servers",
+   "# · ≈# tokens",
+   "Scope Name Path ≈Tokens Uses (#t) Flags Status",
+   "user docs-search ~/.claude.json # # on",
+   "plugin browser read-only ~/.claude/plugins/cache/demo/browser/#/.mcp.json # — unused on",
+   "last record is a connection failure",
+   "Next step",
+   "Hooks",
+   "# · ≈# tokens",
+   "Scope Name Path ≈Tokens Uses (#t) Flags Status",
+   "user Stop ~/.claude/settings.json # — on"
   ],
   "attn": [
    "Needs your response #",

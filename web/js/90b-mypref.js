@@ -1,6 +1,7 @@
 // «Preferences» settings category (90-settings.js cfgPaneMe): screen prefs in UIS, server prefs via /api/prefs.
 // ⚠Empty storage must reproduce the stock screen byte for byte: every normaliser returns the built-in default for missing/bad input.
-const MP_TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
+const MP_TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat', 'tools'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
+// ⚠New tabs go last: the shortcut digit is the rail position, so a tab inserted earlier would renumber every tab after it.
 function mpJson(k){ try{ return JSON.parse(UIS.getItem(k) || 'null'); }catch(e){ return null; } }
 function mpPut(k, v){ try{ if(v == null) UIS.removeItem(k); else UIS.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); return true; }catch(e){ return false; } }
 // mbStartView: 'last' (default = reopen the last tab) or one tab key.
@@ -358,7 +359,7 @@ function mpMainAcctRedraw(){
 // Pane body. Buttons use data-mp* keys that mpActs() handles via cfgBind's generic .strp binding.
 function cfgPaneMe(){
   const opt = cfgOpt, set = cfgSet, seg = cfgSeg, sel = cfgSel, H = s => '<div class=cfgs>' + esc(s) + '</div>';
-  const lab = {time: T('Timeline'), chat: T('Chat'), struct: T('Structure'), br: T('Branches'), pipe: T('Pipelines'), token: T('Tokens'), hist: T('History'), retro: T('Insights')};
+  const lab = {time: T('Timeline'), chat: T('Chat'), struct: T('Structure'), br: T('Branches'), pipe: T('Pipelines'), token: T('Tokens'), hist: T('History'), retro: T('Insights'), tools: T('Tools')};
   const list = (p, labs, k, lock) => '<div class=mpls>' + p.order.map((x, i) => {
     const hid = p.hide.includes(x);
     return '<div class="mpli' + (hid ? ' off' : '') + '"><span>' + esc(labs[x]) + '</span>'

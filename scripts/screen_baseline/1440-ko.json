@@ -8,7 +8,8 @@
    "토큰",
    "이력",
    "인사이트",
-   "채팅"
+   "채팅",
+   "도구"
   ],
   "tab:pipe": [
    "파이프라인",
@@ -562,8 +563,6 @@
    "#t 전"
   ],
   "tab:token": [
-   "사용량",
-   "도구",
    "#t 전",
    "주간 토큰",
    "최근 #t · 프로젝트별",
@@ -1227,6 +1226,41 @@
    "search",
    "글 #건",
    "#t 전"
+  ],
+  "tab:tools": [
+   "도구",
+   "세션 도구",
+   "도구 목록 · #t 사용",
+   "점검 결과",
+   "문제 #",
+   "확인 필요 #",
+   "정상 #",
+   "≈토큰은 파일 크기로 어림한 값 · 행을 누르면 내용을 봅니다",
+   "스킬",
+   "#개 · ≈#K 토큰",
+   "범위 이름 경로 ≈토큰 #t 사용 표시 상태",
+   "사용자 release-notes release · 노트 ~/.claude/skills/release-notes/SKILL.md # # 켜짐",
+   "프로젝트 acme-web release-note ~/src/acme-web/.claude/skills/release-note/SKILL.md # — 미사용비슷함 켜짐",
+   "에이전트",
+   "#개 · ≈#K 토큰",
+   "범위 이름 경로 ≈토큰 #t 사용 표시 상태",
+   "사용자 code-reviewer ~/.claude/agents/code-reviewer.md # # 켜짐",
+   "프로젝트 billing-api test-writer ~/src/billing-api/.claude/agents/test-writer.md # # 꺼짐",
+   "명령",
+   "#개 · ≈# 토큰",
+   "범위 이름 경로 ≈토큰 #t 사용 표시 상태",
+   "사용자 ship ~/.claude/commands/ship.md # # 켜짐",
+   "MCP",
+   "#개 · ≈# 토큰",
+   "범위 이름 경로 ≈토큰 #t 사용 표시 상태",
+   "사용자 docs-search ~/.claude.json # # 켜짐",
+   "플러그인 browser 읽기 전용 ~/.claude/plugins/cache/demo/browser/#/.mcp.json # — 미사용 켜짐",
+   "연결 실패 기록이 마지막",
+   "다음 할 일",
+   "훅",
+   "#개 · ≈# 토큰",
+   "범위 이름 경로 ≈토큰 #t 사용 표시 상태",
+   "사용자 Stop ~/.claude/settings.json # — 켜짐"
   ],
   "attn": [
    "응답 필요 #",

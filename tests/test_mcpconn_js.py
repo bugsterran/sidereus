@@ -26,7 +26,7 @@ def _read(p):
 _PRE = ("let LANG = 'ko';\n" + i18n_switch(("T", "TV", "U", "AGO")) +
         "const LST = {}, POSTS = [], COPIES = [], NOTES = [], STORE = {};\n"
         "const document = {addEventListener(t, f){ (LST[t] = LST[t] || []).push(f); }, querySelector(){ return null; }, getElementById(){ return null; }, activeElement: null};\n"
-        "let setInterval = () => 0, mainView = 'x', PLVIEW = 'x';\n"
+        "let setInterval = () => 0, mainView = 'x', TLVIEW = 'x';\n"
         "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;'}[c]));\n"
         "function lsGet(k, d){ return Object.prototype.hasOwnProperty.call(STORE, k) ? STORE[k] : d; }\n"
         "function lsSet(k, v){ STORE[k] = v; return true; }\n"
@@ -75,12 +75,21 @@ class McpConnJs(unittest.TestCase):
         for p in _FS + [os.path.join(_JS, "06-i18n-zzx-mcpconn.js"), os.path.join(_JS, "46-tokens-tab.js")]:
             subprocess.run(["node", "--check", p], check=True)
 
-    def test_R1_conn_view_in_pipeline_tab(self):
-        s = _read(os.path.join(_JS, "48-pipeline.js"))
-        self.assertIn("const PLVIEWS = ['pipe', 'harness', 'tools', 'conn'];", s)
-        self.assertIn("['conn', 'Connections']", s)
-        self.assertIn("if(PLVIEW === 'conn'){ paintMcpConn(box); return true; }", s)
+    def test_R2_session_tools_view_in_tools_tab(self):
+        s = _read(os.path.join(_JS, "47a-tools-tab.js"))
+        self.assertIn("const TLVIEWS = ['tools', 'conn'];", s)
+        self.assertIn("['conn', 'Session tools']", s)
+        self.assertIn("if(TLVIEW === 'conn'){ paintMcpConn(box); return; }", s)
         self.assertNotIn("paintMcpConn", _read(os.path.join(_JS, "46-tokens-tab.js")))
+        self.assertNotIn("paintMcpConn", _read(os.path.join(_JS, "48-pipeline.js")))
+        ko = _read(os.path.join(_JS, "06-i18n-zzx-mcpconn.js"))
+        self.assertIn("'Session tools': '세션 도구'", ko)
+        self.assertNotIn("'Connections':", ko)   # the Structure «Connections» tree is a different feature
+
+    def test_R2_shown_only_on_tools_tab_session_tools_view(self):
+        out = _js("const r = []; for(const [m, v] of [['tools', 'conn'], ['tools', 'tools'], ['pipe', 'conn'], ['token', 'conn']]){"
+                  " mainView = m; TLVIEW = v; r.push(mcpcShown()); } console.log(JSON.stringify(r))")
+        self.assertEqual(out, [True, False, False, False])
 
     def test_R1_strip_live_sessions_all_clis(self):
         out = _js("SESS = [{sid: 'a', plat: 'cc', state: 'think'}, {sid: 'b', plat: 'pi', state: 'wait'}, {sid: 'c', plat: 'cx', state: 'idle'},"

@@ -67,7 +67,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Same family (2026-09-26): the work log's `.wvh` was 31.67px while `.aghd` is sticky at `top:66px` (=34+32), so log text showed through a 0.33px gap. ⇒ `.wvh:has(+ .aghd){box-sizing:border-box;min-height:32px}` (`40-tokens.css`). When changing a sticky head's height, check the `top` of the layer below.
 - **One header→content divider** (2026-10-13). Cause: tab captions `.wvh.wvht` drew a second full-width rule under the header rule, and `.brep`/`.rcw` top padding doubled the 12px gap (24–26px).
   - ⇒ Only the header's `var(--nx-rule)` line, then `#feed`'s 12px. `.wvh.wvht{border-bottom-width:0}`; the timeline keeps its line as the axis top (`:has(+ .tlaxr)`). `.brep`/`.rcw` have no top padding.
-  - ⇒ Sub-view switches (Pipelines «Pipelines | Harness report | Tools | Connections») go in `#tbar` via `tbSlot('pipe')`, never in the body.
+  - ⇒ Sub-view switches (Pipelines «Pipelines | Harness report» via `tbSlot('pipe')`, Tools «Tools | Session tools» via `tbSlot('tools')`) go in `#tbar`, never in the body.
   - ⚠The sticky caption has no bottom edge while stuck (accepted); a new caption/toolbar row must not add its own rule.
 - ★**Right session column → top-right drawer** (2026-09-24). Default is no column; the header «Session» button (`#sesb`, badge = running tool/think · needs-me sessions `attnBadgeN`) opens it. `#lstog` · `body.lsoff/lson` are gone.
   - ⇒ State `sidereus.sespin` (1 = pinned = the old right column) · `sidereus.sesdr` (1 = drawer open). Old `sidereusLsOff` is migrated once ('0' → pinned, else → drawer) then deleted. `sidereus.wkside` shows only when pinned.
@@ -308,13 +308,24 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⇒ a `close` listener only clears the stuck `UCF` (else every later dialog resolves «Cancel» as `ucf-busy`); it skips while `d.open`, since our own `close()` queues a close event that can land after a reopen (`test_forced_close_without_cancel_clears_state`).
 - ⚠`ucfKey` uses `stopImmediatePropagation`, not `stopPropagation`: the 98b tour keydown is on the same window-capture target and would still run.
 
-## Old Token › Tools/Connections redirect depends on load order (`05-i18n.js` mainView · `48-pipeline.js` PLVIEW · `46-tokens-tab.js`)
-- Cause: «Tools» and «Connections» moved from the Token tab to Pipelines; a stored `sidereus.tkview` of `tools`/`conn` (or `#tokens` with it) must land on Pipelines › that view, but 46 deletes `sidereus.tkview` at load.
-- ⇒ 05 resolves `mainView` to 'pipe' and sets `mvTkMoved`; 46 then deletes the old key; 48 (loads after 46) seeds `PLVIEW` from `mvTkMoved`, never the key, and saves `sidereus.plview`. 05 also calls `tabSet('mbMainView','pipe')`.
-- ⚠Without that `tabSet`, the stored tab stays 'token' and the tkview is gone, so a second reload opens Token › Usage.
-- ⚠Only 05 reads `sidereus.tkview`, and it must stay before 46; reading the key in any file after 46 loses the redirect.
+## Old Tools/Connections views redirect to the Tools tab by load order (`05-i18n.js` mainView · `47a-tools-tab.js` TLVIEW · `46-tokens-tab.js` · `48-pipeline.js` PLVIEW)
+- Cause: «Tools» and «Connections» lived in the Tokens tab, then in Pipelines; a stored `sidereus.tkview` or `sidereus.plview` of `tools`/`conn` (or `#tokens`/`#pipelines` with it) must open that view in the Tools tab, but 46 deletes `sidereus.tkview` and 48 rewrites a `tools`/`conn` `sidereus.plview` to 'pipe' at load.
+- ⇒ 05 resolves `mainView` to 'tools', sets `mvToolsMoved` and calls `tabSet('mbMainView','tools')`; 47a seeds `TLVIEW` from `mvToolsMoved`, never the old keys, and saves `sidereus.tlview`.
+- ⚠Without that `tabSet`, the stored tab stays 'token'/'pipe' and the old key is gone, so a second reload opens Tokens › Usage or Pipelines.
+- ⚠Only 05 reads the old values; it must stay before 46 and 48. Reading them in any later file loses the redirect.
+
+## The Config map in the Harness report repeats nothing of the report (`47b-harness.js` hnCfgHtml)
+- Cause: standalone, `hnCfgHtml` paints its own `.hnw`, platform switch and «Check results» line; inside the report they would show twice, and two `.hnw` break every handler that takes `document.querySelector('.hnw')`.
+- ⇒ The report calls `hnCfgHtml(proj, emb)` with `emb` set: only `.hncfgw` + `<details class=hncfg>` inside the report's `.hnw`; the report draws the switch and the check line once.
+- ⚠Never drop `emb` from the report's call, and never add `.hnw`, `hnPlatSwitch` or `hnVdLine` to the `emb` branch.
+
+## The Tools list loads the harness itself (`47-tools.js` paintTools → `47b-harness.js` hnLoad)
+- Cause: list decorations (stage chips, check marks, «not installed» rows, the «Check results» line) come from `/api/harness`, which only the Harness report loaded; opening the Tools tab first left them empty for good.
+- ⇒ `paintTools` calls `hnLoad(PLS.proj, false)` on every paint (cached per project, skipped when feature `harness` is off); no harness data still means plain rows.
+- ⚠Do not rely on the Harness report having run first, and never show «not installed» or a zero count while the load is pending.
 
 ## Claude Code skill/MCP check results live in the Tools list (`47-tools.js` tvwHn · `47b-harness.js` hnVdStep)
 - Cause: «Check results» counts every harness row, but under Claude Code «Config map» no longer draws skill/MCP rows; the list rows carry them, joined by `tid` = Tools `id`.
-- ⇒ `hnVdStep` searches `.tvw` (Config map + list); a flagged row with no list item (stage names an uninstalled skill, server missing from the list) is drawn as a `.tvwmiss` row so the count still has a target (`test_verdict_line_and_rows`).
+- ⇒ `hnVdStep` searches the current view only (`.hncfgw` in the Harness report, `.tvw` in the Tools tab); past the last row `hnVdGo` hands off to the other view via `HN.vdPend`/`HN.vdTo` + `hnVdPendRun`; a flagged row with no list item (stage names an uninstalled skill, server missing from the list) is drawn as a `.tvwmiss` row so the count still has a target (`test_verdict_line_and_rows`).
 - ⚠No harness data (not loaded, failed, feature off, another platform) = plain list rows, never «not installed».
+- ⚠A hand-off switches tabs, and 92 `mvScrollBack` then re-applies that tab's saved scrollTop for up to 4 s, which undid the step's `scrollIntoView` (★live 2026-11-20: row at top 3269 while the feed showed 104–1040) ⇒ `hnVdStep` calls 92 `mvScrollStop()` right before it scrolls (`test_r3_step_ends_tab_scroll_restore`).

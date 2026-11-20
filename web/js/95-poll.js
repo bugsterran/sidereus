@@ -30,6 +30,7 @@ function featsApply(f){
   if(!plWas && FEATS.pipeline !== false && typeof plFeatReset === 'function') plFeatReset();   // drop the cached 404 from while it was off
   try{ buildMv(); }catch(e){ softErr('featsMv', e); }   // an off current tab falls back to Timeline there
   if(mainView === 'pipe') try{ plPaint(); }catch(e){ softErr('featsPipe', e); }
+  if(mainView === 'tools') try{ tlPaint(); }catch(e){ softErr('featsTools', e); }   // the Tools list reads FEATS.harness (47 harness rows)
   try{ paintCfg(); }catch(e){ softErr('featsCfg', e); }   // no-op while Settings is closed
 }
 // Reconnected: a shown Timeline error note (tlErr, 70) would otherwise wait for tlAuto, or forever under «Manual».
@@ -83,6 +84,7 @@ async function poll(first){
     if(mainView === 'struct' && !ISPOP && !ISWP && !document.hidden) try{ if(strSessKey() !== strSessSig){ paintStruct(); if(strMode === 'size' || !strOn.length) loadStruct(false); } else strBrSync(); }catch(e){ softErr('pollStruct', e); }
     featsApply(s.features);         // feature-off tabs hide on the buildMv below (92-mainview-tabs.js TAB_FEAT)
     if(!ISPOP && !ISWP) try{ plPoll(); }catch(e){ softErr('pollPipe', e); }   // «Pipelines» live lighting (48b-pipeline-run.js)
+    if(!ISPOP && !ISWP) try{ tlPoll(); }catch(e){ softErr('pollTools', e); }   // «Tools» tab lists and Session tools (47a)
     if(s.build && MY_BUILD && s.build!==MY_BUILD) document.getElementById('stale').classList.add('on');
     // ⚠Keep in-flight read keys — a poll snapshotted before the POST landed would flip them back to unread.
     CARDS=s.cards||[]; CREAD=s.cardsRead||''; CRIDS=new Set((s.cardsReadIds||[]).concat([...CRPEND]));

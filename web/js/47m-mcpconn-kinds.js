@@ -1,4 +1,4 @@
-// «Connections» kind chips Skills / Agents / Hooks (47k chip row): the same orbit engine (mcpcGeo + mcpcGrowH) draws one node
+// «Session tools» kind chips Skills / Agents / Hooks (47k chip row): the same orbit engine (mcpcGeo + mcpcGrowH) draws one node
 // per item this session can load, from the `kinds` block of GET /api/mcp-conn (sidereus/mcp_conn.py). Side cards, «Task» only.
 // ⚠Rule 1: names, scope, abbreviated path, matcher, hook names, counts and times only — never a hook command, its output or file text.
 // ⚠Rule 7: the only action is «Task»; text leaves through 47l mcpcSend after «Confirm — send». No Reconnect/Restart/Diagnose here.

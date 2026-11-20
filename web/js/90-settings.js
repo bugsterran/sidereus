@@ -15,7 +15,7 @@ function setLang(v){
   try{ buildSbar(); }catch(e){ softErr('buildSbar', e); }
   try{ buildHealth(); }catch(e){ softErr('buildHealth', e); }   // header health warning
   try{ const h = document.querySelector('#sdrwin .sdrwh > b'); if(h) h.textContent = T('Quota details'); }catch(e){}   // built once at load
-  try{ if(mainView === 'token') paintToken(); else if(mainView === 'struct') paintStruct(); else if(mainView === 'br') paintBr(); else if(mainView === 'hist') paintHist(); else if(mainView === 'retro') paintRetro(); else if(mainView === 'time') paintTl(); else if(mainView === 'pipe') plPaint(); }catch(e){ softErr('paintTab', e); }   // ⚠tab screens repaint only here (timeline was missing: full() wiped it and the rail/toolbar kept the old language until the next load)
+  try{ if(mainView === 'token') paintToken(); else if(mainView === 'struct') paintStruct(); else if(mainView === 'br') paintBr(); else if(mainView === 'hist') paintHist(); else if(mainView === 'retro') paintRetro(); else if(mainView === 'time') paintTl(); else if(mainView === 'pipe') plPaint(); else if(mainView === 'tools') tlPaint(); }catch(e){ softErr('paintTab', e); }   // ⚠tab screens repaint only here (timeline was missing: full() wiped it and the rail/toolbar kept the old language until the next load)
 }
 // «Background tone» (mbTone): black·grey·blue = dark tones, white = light theme, system = OS light -> white, OS dark -> last dark tone.
 // ⚠Default (nothing stored) = system; web/app-head.js applies the same default before first paint.
@@ -33,7 +33,7 @@ function setTheme(v){
   if(same) return;
   try{ strPopPaint(); }catch(e){ softErr('popRepaint', e); }   // popups bake thc() colors too
   try{ full(); }catch(e){ softErr('full', e); }   // ⚠before the tab repaint — full() writes the chat feed into #feed and wiped the open tab
-  try{ if(mainView === 'token') paintToken(); else if(mainView === 'struct') paintStruct(); else if(mainView === 'br') paintBr(); else if(mainView === 'hist') paintHist(); else if(mainView === 'retro') paintRetro(); else if(mainView === 'time') paintTl(); else if(mainView === 'pipe') plPaint(); }catch(e){ softErr('paintTab', e); }
+  try{ if(mainView === 'token') paintToken(); else if(mainView === 'struct') paintStruct(); else if(mainView === 'br') paintBr(); else if(mainView === 'hist') paintHist(); else if(mainView === 'retro') paintRetro(); else if(mainView === 'time') paintTl(); else if(mainView === 'pipe') plPaint(); else if(mainView === 'tools') tlPaint(); }catch(e){ softErr('paintTab', e); }
   try{ buildBurn(); }catch(e){ softErr('buildBurn', e); }
   try{ buildPeople(); }catch(e){ softErr('buildPeople', e); }   // people list bakes nmSty() colors; full() only redraws the feed
 }

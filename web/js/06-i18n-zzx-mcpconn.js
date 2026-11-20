@@ -1,6 +1,6 @@
-// Korean for the token tab «Connections» view (47k-mcpconn.js orbit · 47l-mcpconn-side.js side column).
+// Korean for the Tools tab «Session tools» view (47k-mcpconn.js orbit · 47l-mcpconn-side.js side column).
 Object.assign(I18N.ko, {
-  'Connections': '연결',
+  'Session tools': '세션 도구',
   'Connected|mcp': '연결됨', 'Failed|mcp': '실패', 'Unknown|mcp': '기록 없음', 'Login needed': '로그인 필요', 'Restart|mcp': '재시작', 'Sent|mcp': '보냄',
   '{a} connected · {b} failed': '연결 {a} · 실패 {b}',
   '{a} connected · {b} login needed': '연결 {a} · 로그인 필요 {b}',

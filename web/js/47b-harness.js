@@ -82,33 +82,41 @@ function hnVdLine(c){
       : '<span class="hnvdc hnvdz">' + esc(T(HN_VDL[l], 'verdict')) + ' 0</span>').join('')
     + '<span class="hnvdc hnvdz">' + esc(T('ok')) + ' ' + k('ok') + '</span></div>';
 }
-// Flagged rows live in the Tools view («Config map» + the list's skill/MCP rows under Claude Code): from the Harness report, open it there first, then step after paint.
-function hnVdGo(lvl){
-  const w = document.querySelector('.hnw');
-  if(!(w && w.classList && w.classList.contains('hncfgw'))){
-    HN.cfgOpen = true; lsSet('sidereus.hncfg', '1'); HN.vdPend = lvl;
-    plSetView('tools');
-    // ⚠Tools list not loaded yet: its skill/MCP rows are not painted, so 47 loadTools runs the step after its paint.
-    (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout)(() => { if(!(typeof TOOLS !== 'undefined' && TOOLS === null)) hnVdPendRun(); });
-    return;
-  }
-  HN.vdPend = '';
-  hnVdStep(lvl);
+// Flagged rows live in two views: the report's «Config map» fold (.hncfgw) and, under Claude Code, the Tools tab list (.tvw skill/MCP rows).
+function hnTlOn(){ return typeof TLVIEW !== 'undefined' && mainView === 'tools' && TLVIEW === 'tools'; }
+function hnVdView(){ return hnTlOn() ? 'tools' : mainView === 'pipe' && PLVIEW === 'harness' ? 'harness' : ''; }
+function hnVdEls(lvl){
+  const v = hnVdView(), w = v ? document.querySelector(v === 'tools' ? '.tvw' : '.hncfgw') : null;
+  return { w: w, els: w ? Array.from(w.querySelectorAll('[data-hnvdl="' + lvl + '"]')) : [] };
 }
-// One pending jump from the report; dropped when the view is no longer Tools.
+// Steps rows here; past the last one, when the server counts more than this view holds, continues in the other view from its first row.
+function hnVdGo(lvl){
+  const v = hnVdView(), els = hnVdEls(lvl).els, d = HN.data[hnKey(PLS.proj)];
+  const tot = Number(d && d.verdict && d.verdict[lvl]) || 0, i = els.findIndex(e => e.dataset.hnvd === HN.vdAt[lvl]);
+  HN.vdPend = '';
+  if(!v || !(tot > els.length && (!els.length || i === els.length - 1))) return hnVdStep(lvl);
+  HN.vdPend = lvl; HN.vdTo = v === 'harness' ? 'tools' : 'harness'; delete HN.vdAt[lvl];
+  const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout;
+  if(HN.vdTo === 'harness'){ plSetView('harness'); raf(hnVdPendRun); return; }
+  tlSetView('tools');
+  // ⚠Tools list not loaded yet: its skill/MCP rows are not painted, so 47 loadTools runs the step after its paint.
+  raf(() => { if(!(typeof TOOLS !== 'undefined' && TOOLS === null)) hnVdPendRun(); });
+}
+// One pending jump; dropped when the view is no longer its target. ⚠Steps only (never hnVdGo): 0 rows on arrival stops, no bouncing.
 function hnVdPendRun(){
   const l = HN.vdPend;
   HN.vdPend = '';
-  if(l && mainView === 'pipe' && PLVIEW === 'tools') hnVdStep(l);
+  if(l && hnVdView() === HN.vdTo) hnVdStep(l);
 }
 function hnVdStep(lvl){
-  const w = document.querySelector('.tvw') || document.querySelector('.hncfgw'), els = w ? Array.from(w.querySelectorAll('[data-hnvdl="' + lvl + '"]')) : [];
+  const r = hnVdEls(lvl), w = r.w, els = r.els;
   if(!els.length) return;
   const i = els.findIndex(e => e.dataset.hnvd === HN.vdAt[lvl]), el = els[(i + 1) % els.length];
   HN.vdAt[lvl] = el.dataset.hnvd;
   for(let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) if(!d.open) d.open = true;   // fold open; toggle keeps HN state
   w.querySelectorAll('.hnvdon').forEach(e => e.classList.remove('hnvdon'));
   el.classList.add('hnvdon');
+  if(typeof mvScrollStop === 'function') mvScrollStop();   // ⚠after a tab hand-off, 92 mvScrollBack keeps restoring the tab's saved scrollTop and would undo this jump
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });   // ⚠nearest: never re-centre the page
 }
 function hnChip(h, showEv){
@@ -253,16 +261,11 @@ async function hnLoad(proj, force){
   hnRepaint(true);   // poll-style: skipped while focus is inside .hnw
   if(v && v.scanning) setTimeout(() => { if(FEATS.harness !== false && hnShown() && PLS.proj === proj && HN.plat === plat) hnLoad(proj, true); }, 5000);
 }
-// Harness data shows in two places: the Harness report and the Tools view's «Config map».
-function hnShown(){ return mainView === 'pipe' && (PLVIEW === 'harness' || PLVIEW === 'tools'); }
+// Harness data shows in two places: the Harness report (with «Config map») and the Tools tab list (stage chips, check results).
+function hnShown(){ return hnVdView() !== ''; }
 function hnRepaint(poll){
   if(mainView === 'pipe' && PLVIEW === 'harness') plPaint(poll);
-  else if(mainView === 'pipe' && PLVIEW === 'tools'){
-    // ⚠Same guards as plPaint: a poll rebuild drops keyboard focus and an open title tooltip inside the map.
-    const fe = document.activeElement;
-    if(poll && ((fe && fe.closest && fe.closest('.hncfgw')) || (document.querySelector && document.querySelector('.hncfgw [title]:hover')))) return;
-    plPaint(poll);
-  }
+  else if(hnTlOn()) tlPaint(poll === true);   // ⚠tlPaint holds a poll rebuild while focus/hover is inside .tvw
 }
 function hnSetPlat(p){
   HN.plat = String(p || 'cc'); lsSet('sidereus.hnplat', HN.plat); HN.go = null;
@@ -469,8 +472,8 @@ function hnHtml(){
   if(!proj) body = '<div class=hidnote>' + esc(T('Pick a project')) + '</div>';
   else if(!d) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the harness')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
-  // Report (+ check-results line, its counts jump to the Tools «Config map»), then «How to read this» and raw «Gate runs», both closed by default.
-  else body = hnReport(d) + hnVdLine(d.verdict) + hnReadHtml() + (typeof hnSelfcheck === 'function' ? hnSelfcheck(d) : '')   // 47f «Guard self-check»
+  // Report + check-results line (its counts step the «Config map» fold, then the Tools tab list), then «How to read this» and raw «Gate runs», closed by default.
+  else body = hnReport(d) + hnVdLine(d.verdict) + hnCfgHtml(proj, true) + hnReadHtml() + (typeof hnSelfcheck === 'function' ? hnSelfcheck(d) : '')   // 47f «Guard self-check»
     + '<details class="hnmore hnruns" data-hnmore=runs' + (HN.fold.runs ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('Gate runs')) + '</b></div></summary>'
     + hnRes(d.evidence, true) + '</details>';
   return '<div class=hnw>' + (proj ? hnPlatSwitch(HN.plats) : '') + body + '</div>';
@@ -485,8 +488,9 @@ function hnReadHtml(){
   return '<details class="hnmore hnread" data-hnmore=read' + (HN.fold.read ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('How to read this')) + '</b></div></summary><ul class=hnrdl>'
     + HN_READ.map(([k, v]) => '<li><b>' + esc(T(k)) + '</b> — ' + esc(T(v)) + '</li>').join('') + '</ul></details>';
 }
-// Tools view (47 paintTools): the hook/rule/agent/MCP/skill map; ⚠only one .hnw exists at a time (#feed is shared), click handlers scope to it.
-function hnCfgHtml(proj){
+// The hook/rule/agent/MCP/skill map; ⚠only one .hnw exists at a time (#feed is shared), click handlers scope to it.
+// emb = inside hnHtml: no own .hnw, platform switch or check line (the report draws those once).
+function hnCfgHtml(proj, emb){
   if(typeof FEATS !== 'undefined' && FEATS.harness === false) return '';
   const d = proj ? HN.data[hnKey(proj)] : null;
   if(proj) hnLoad(proj, false);
@@ -495,17 +499,17 @@ function hnCfgHtml(proj){
   if(!proj) body = '<div class=hidnote>' + esc(T('Pick a project in Pipelines')) + '</div>';
   else if(!d) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the harness')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
-  else body = hnPlatSwitch(HN.plats) + hnVdLine(d.verdict) + (d.scanning ? '<div class=hidnote>' + esc(T('Counting runs…')) + '</div>' : '')
+  else body = (emb ? '' : hnPlatSwitch(HN.plats) + hnVdLine(d.verdict)) + (d.scanning ? '<div class=hidnote>' + esc(T('Counting runs…')) + '</div>' : '')
     + '<details class=hnflow data-hnflow' + (HN.flowOpen ? ' open' : '') + '><summary>'
     + '<div class=brh2><b>' + esc(T('Hook flow')) + '</b> <i>' + esc(TV({msg: 'effects are estimates · counts = last {n} days', vars: {n: HN.days}})) + '</i></div>'
     + hnSum(d.events) + '</summary>' + hnLegend() + hnLaneHtml(d.events) + '</details>'
     + '<div class=hnbot><div class=hnbx><div class=brh2><b>' + esc(T('Rule files')) + '</b> <i>' + esc(T('load order')) + '</i></div>' + hnRules(d.rules) + '</div>'
     + '<div class=hnbx><div class=brh2><b>' + esc(T('Agents ↔ pipelines')) + '</b></div>' + hnAgents(d.agents) + '</div>'
-    // Claude Code: skill/MCP rows (stage chips, check results) live in the Tools list below (47 tvwRow); other CLIs keep them here.
-    // ⚠Until /api/tools is loaded and ok the list has no such rows: draw them here so «Check results» still has targets.
+    // Claude Code: skill/MCP rows (stage chips, check results) live in the Tools tab list (47 tvwRow); other CLIs keep them here.
+    // ⚠Until /api/tools is loaded and ok (it loads only when the Tools tab opens) the list has no such rows: draw them here so «Check results» still has targets.
     + (HN.plat === 'cc' && typeof tvwListed === 'function' && tvwListed() ? '' : hnToolBox(d.mcps, 'MCP servers', 'full') + (Array.isArray(d.skills) ? '<div class=hnbx><div class=brh2><b>' + esc(T('Skills')) + '</b></div>' + hnSkills(d.skills) + '</div>' : '')) + '</div>';
   // Project name as plain text: a button inside <summary> would toggle the fold.
-  return '<div class="hnw hncfgw"><details class=hncfg' + (HN.cfgShown ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
+  return '<div class="' + (emb ? '' : 'hnw ') + 'hncfgw"><details class=hncfg' + (HN.cfgShown ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
     + (proj ? ' <i class=hncfgp>' + esc(String(proj).split('/').pop()) + '</i>' : '') + (d && d.ok !== false ? hnVdSum(d.verdict) : '') + '</div></summary>' + body + '</details></div>';
 }
 // File viewer = the structure tab's code window (81 strPopOpenText: one window per file, theme, highlight, blocked-popup overlay).
@@ -534,7 +538,7 @@ document.addEventListener('click', e => {
   }
   const pb = e.target.closest('.hnw [data-hnplat]');
   if(pb){ if(pb.dataset.hnplat !== HN.plat) hnSetPlat(pb.dataset.hnplat); return; }
-  const vg = e.target.closest('.hnw [data-hnvdgo]');
+  const vg = e.target.closest('.hnw [data-hnvdgo], .tvw [data-hnvdgo]');   // the Tools tab list repeats the check line
   if(vg){ hnVdGo(vg.dataset.hnvdgo === 'bad' ? 'bad' : 'check'); return; }
   const r = e.target.closest('.hnw [data-hnref]');
   if(r){ hnOpen(r.dataset.hnref, hnCardName(r)); return; }

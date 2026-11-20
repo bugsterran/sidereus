@@ -350,7 +350,7 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 
 ## Hook runs counted twice or three times (`sidereus/toolidx.py` `session_mcp` · `TI_SESS_PRE`)
 - Cause: one hook run writes `hook:<name>`, `hookc:<name>#<hash>` (per command hash) and, when it adds context, `hookctx:<name>` — the same run recorded again.
-- ⇒ «Connections» Hooks counts `hook:` keys only (`TI_SESS_PRE` prefix `"hook:"` excludes the other two); a test asserts `hookc:`/`hookctx:` add nothing.
+- ⇒ «Session tools» Hooks counts `hook:` keys only (`TI_SESS_PRE` prefix `"hook:"` excludes the other two); a test asserts `hookc:`/`hookctx:` add nothing.
 - ⚠Never widen the prefix to `"hook"` or sum the three key forms.
 
 ## Codex logs no MCP startup connection (`sidereus/mcp_conn.py` Codex branch)
@@ -371,5 +371,5 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 
 ## A `TI_CACHE_V` bump costs one cold rescan (`sidereus/toolidx.py` `TI_CACHE_V`, now 6)
 - Cause: `_load_disk` drops `toolidx-cache.json` when its version differs, so the first start after the bump re-reads 90 days of transcripts (★10-03: 4.64 GB · 3,970 files · 21.6 s).
-- ⇒ The rescan runs once in the background; «Tools»/«Harness»/«Connections» show scanning until it ends, later starts load the cache.
+- ⇒ The rescan runs once in the background; «Tools»/«Harness»/«Session tools» show scanning until it ends, later starts load the cache.
 - ⚠Bump only when the stored event shape changes (v6: `mcpauth:` keys); a stale cache otherwise serves old keys silently.

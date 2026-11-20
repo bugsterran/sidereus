@@ -1,4 +1,4 @@
-"""Pipeline tab «Tools» view hosts the Harness «Config map» (47b hnCfgHtml via 47-tools.js paintTools) — R3, plus the R4 jump from the report.
+"""Harness «Config map» (47b hnCfgHtml, a fold in the report) and the Tools tab list (47-tools.js paintTools) — R3: «Check results» steps cross both.
 Claude Code skill/MCP rows: no Config map boxes (R1), stage chips (R2) and check results (R3) on the Tools list rows joined by `tid`."""
 import json
 import os
@@ -14,9 +14,14 @@ _HN = os.path.join(ROOT, "web", "js", "47b-harness.js")
 _TL = os.path.join(ROOT, "web", "js", "47-tools.js")
 _NX = os.path.join(ROOT, "web", "js", "47g-harness-next.js")
 # Recorders replace the plain stubs: localStorage writes, view switches, repaints and the next-frame callback.
-_REC = ("var LS = [], MV = [], SV = [], RAF = [], SCR = [], QSEL = null;"
-        " function lsSet(k, v){ LS.push([k, v]); } function setMainView(v){ MV.push(v); mainView = v; } function plSetView(v){ SV.push(v); }"
-        " function requestAnimationFrame(f){ RAF.push(f); }\n")
+_REC = ("var LS = [], MV = [], SV = [], TLV = [], TLP = [], RAF = [], SCR = [], QSEL = null, TLVIEW = 'tools';"
+        " function lsSet(k, v){ LS.push([k, v]); } function setMainView(v){ MV.push(v); mainView = v; }"
+        " function plSetView(v){ SV.push(v); mainView = 'pipe'; PLVIEW = v; } function tlSetView(v){ TLV.push(v); mainView = 'tools'; TLVIEW = v; }"
+        " function tlPaint(p){ TLP.push(p); } function requestAnimationFrame(f){ RAF.push(f); }\n")
+# Fake views: rows of level bad in the Harness fold (.hncfgw) and the Tools tab list (.tvw); RUN() fires the queued next frames.
+_ROWS = ("const ROW = id => ({dataset: {hnvd: id}, closest(){ return null; }, classList: {add(){}, remove(){}}, scrollIntoView(){}});"
+         " const BOX = ids => { const rs = ids.map(ROW); return {querySelectorAll(s){ return s === '[data-hnvdl=\"bad\"]' ? rs : []; }}; };"
+         " var VIEWS = {}; QSEL = s => VIEWS[s] || null; const RUN = () => RAF.splice(0).forEach(f => f());")
 _DOC = ("const LST = {}; const document = {addEventListener(t, f){ (LST[t] = LST[t] || []).push(f); },"
         " querySelector(s){ return QSEL ? QSEL(s) : null; }};\n")
 _DATA = {"ok": True, "events": [{"ev": "Stop", "hooks": [{"cmd": "c.sh", "n": 3, "vd": {"lvl": "bad", "why": "hook_missing", "id": "v1"}}]}],
@@ -68,12 +73,15 @@ class ToolsConfigMap(unittest.TestCase):
         self.assertEqual(r[1], False)
         self.assertEqual(r[2], [["sidereus.hncfg", "0"]])
 
-    def test_r3_paint_tools_order(self):
-        h = _js(" TOOLS = {ok: true, items: [{id: 's1', kind: 'skill', name: 'sk', scope: 'user', path: '/p', on: true}]}; toolsAt = NOW;"
-                " const box = {innerHTML: '', querySelector(){ return null; }}; mainView = 'pipe'; PLVIEW = 'tools'; paintTools(box);"
-                " console.log(JSON.stringify(box.innerHTML))", tools=True)
-        self.assertLess(h.index("wvht"), h.index("hncfgw"))
-        self.assertLess(h.index("hncfgw"), h.index("class=tvwg"))
+    def test_r3_paint_tools_no_map_but_loads_harness(self):
+        h, none, urls = _js(" TOOLS = {ok: true, items: [{id: 's1', kind: 'skill', name: 'sk', scope: 'user', path: '/p', on: true}]}; toolsAt = NOW;"
+                            " const box = {innerHTML: '', querySelector(){ return null; }}; mainView = 'tools'; paintTools(box); const a = box.innerHTML;"
+                            " HN.data = {}; HN.at = {}; paintTools(box); console.log(JSON.stringify([a, box.innerHTML, URLS]))", tools=True)
+        self.assertNotIn("hncfg", h)   # the map is a fold in the Harness report now
+        self.assertLess(h.index("wvht"), h.index("class=hnvdl>"))   # check line above the list: stepping continues here
+        self.assertLess(h.index("class=hnvdl>"), h.index("class=tvwg"))
+        self.assertNotIn("class=hnvdl>", none)   # no harness data: no line, never «0»
+        self.assertEqual([u for u in urls if u.startswith("/api/harness?")], ["/api/harness?plat=cc&proj=%2Fw%2Fa&days=30"])   # paintTools loads it itself
 
     def test_r3_feature_off_and_no_project(self):
         off, none = _js(" var FEATS = {harness: false}; const a = hnCfgHtml(PLS.proj); FEATS.harness = true;"
@@ -82,27 +90,39 @@ class ToolsConfigMap(unittest.TestCase):
         self.assertIn("파이프라인 탭에서 프로젝트를 고르세요", none)
         self.assertNotIn("data-hnflow", none)
 
-    def test_r3_load_repaints_tools_view(self):
-        r = _js(" mainView = 'pipe'; PLVIEW = 'tools'; HN.data = {}; var FEATS = {};"
+    def test_r3_load_repaints_tools_tab(self):
+        r = _js(" mainView = 'tools'; HN.data = {}; var FEATS = {};"
                 " fetch = u => Promise.resolve({status: 200, json: () => Promise.resolve({ok: true, events: []})});"
-                " hnLoad('/w/a', true).then(() => console.log(JSON.stringify(PAINTS)))")
-        self.assertEqual(r, 1)
+                " hnLoad('/w/a', true).then(() => console.log(JSON.stringify([PAINTS, TLP])))")
+        self.assertEqual(r, [0, [True]])   # poll-style: 47a tlPaint holds it while focus/hover is inside .tvw
 
-    def test_r3_poll_repaint_skipped_while_focus_in_map(self):
-        r = _js(" mainView = 'pipe'; PLVIEW = 'tools'; document.activeElement = {closest: s => s === '.hncfgw' ? {} : null};"
-                " hnRepaint(true); const a = PAINTS; hnRepaint(); const b = PAINTS; document.activeElement = null;"
-                " QSEL = s => s === '.hncfgw [title]:hover' ? {} : null; hnRepaint(true); const c = PAINTS; QSEL = null; hnRepaint(true);"
-                " console.log(JSON.stringify([a, b, c, PAINTS]))")
-        self.assertEqual(r, [0, 1, 1, 2])   # focus or hover holds a poll repaint; a non-poll repaint still paints
+    def test_r3_repaint_routes_by_tab(self):
+        r = _js(" hnRepaint(true); const a = [PAINTS, TLP.length]; mainView = 'tools'; hnRepaint(); hnRepaint(true); TLVIEW = 'conn'; hnRepaint();"
+                " console.log(JSON.stringify([a, PAINTS, TLP]))")
+        self.assertEqual(r, [[1, 0], 1, [False, True]])   # Harness → plPaint; Tools list → tlPaint; Session tools → neither
 
-    def test_r4_report_jump_opens_tools(self):
-        r = _js(" QSEL = s => s === '.hnw' ? {classList: {contains: () => false}} : null; mainView = 'pipe';"
-                " hnVdGo('bad'); console.log(JSON.stringify([SV, HN.cfgOpen, MV, LS, RAF.length]))")
-        self.assertEqual(r[0], ["tools"])   # R5: the jump goes through 48 plSetView (Pipelines › Tools)
-        self.assertIs(r[1], True)
-        self.assertEqual(r[2], [])
-        self.assertIn(["sidereus.hncfg", "1"], r[3])
-        self.assertEqual(r[4], 1)   # the step waits for the paint
+    def test_r3_step_past_map_lands_on_list_and_back(self):
+        r = _js(_ROWS + " TOOLS = {ok: true, items: []}; HN.data[hnKey('/w/a')].verdict.bad = 3; VIEWS = {'.hncfgw': BOX(['h1', 'h2']), '.tvw': BOX(['t1'])};"
+                " const at = []; const go = () => { hnVdGo('bad'); at.push(HN.vdAt.bad || ''); };"
+                " go(); go(); go(); const a = [TLV.slice(), HN.vdPend, RAF.length]; RUN(); at.push(HN.vdAt.bad);"
+                " go(); RUN(); at.push(HN.vdAt.bad); console.log(JSON.stringify([at, a, TLV, SV, MV, HN.vdPend]))", tools=True)
+        self.assertEqual(r[0], ["h1", "h2", "", "t1", "", "h1"])   # map rows, then the list's first row, then back to the map's first
+        self.assertEqual(r[1], [["tools"], "bad", 1])   # past the last map row: 47a tlSetView, the step waits one frame
+        self.assertEqual(r[2], ["tools"])
+        self.assertEqual(r[3], ["harness"])   # past the last list row: 48 plSetView back to the report
+        self.assertEqual(r[4], [])
+        self.assertEqual(r[5], "")
+
+    def test_r3_step_wraps_when_view_holds_every_row(self):
+        r = _js(_ROWS + " HN.data[hnKey('/w/a')].verdict.bad = 2; VIEWS = {'.hncfgw': BOX(['h1', 'h2'])}; const at = [];"
+                " for(let i = 0; i < 3; i++){ hnVdGo('bad'); at.push(HN.vdAt.bad); } console.log(JSON.stringify([at, TLV, SV, RAF.length]))")
+        self.assertEqual(r, [["h1", "h2", "h1"], [], [], 0])   # Tools list never loaded: the map draws every row, no jump
+
+    def test_r3_arrival_with_no_rows_stops(self):
+        r = _js(_ROWS + " TOOLS = {ok: true, items: []}; HN.data[hnKey('/w/a')].verdict.bad = 3; VIEWS = {'.hncfgw': BOX(['h1'])};"
+                " hnVdGo('bad'); hnVdGo('bad'); VIEWS['.hncfgw'] = null; VIEWS['.tvw'] = BOX([]); RUN();"
+                " console.log(JSON.stringify([TLV, SV, RAF.length, HN.vdAt.bad || '', HN.vdPend]))", tools=True)
+        self.assertEqual(r, [["tools"], [], 0, "", ""])   # 0 rows on arrival: nothing, no jump back
 
     def _paint(self, js):
         return _js(" TOOLS = {ok: true, items: [{id: 's1', kind: 'skill', name: 'sk', scope: 'user', path: '/p', on: true},"
@@ -125,6 +145,17 @@ class ToolsConfigMap(unittest.TestCase):
         self.assertIn("data-hnvdl=bad", miss)
         self.assertNotIn("<x>", h)
         self.assertLess(h.index('data-tid="s1"'), h.index("tvwmiss"))   # leftovers close their kind's section
+
+    def test_r3_step_ends_tab_scroll_restore(self):
+        # 92 mvScrollBack re-applies the tab's saved scrollTop for up to 4s after a tab switch; a hand-off step must end it first.
+        with open(_HN, encoding="utf-8") as f:
+            hn = f.read()
+        step = hn.split("function hnVdStep(", 1)[1].split("\nfunction ", 1)[0]
+        self.assertLess(step.index("mvScrollStop()"), step.index("scrollIntoView"))
+        with open(os.path.join(ROOT, "web", "js", "92-mainview-tabs.js"), encoding="utf-8") as f:
+            mv = f.read()
+        self.assertIn("function mvScrollStop(){ ++mvScrollSeq; }", mv)
+        self.assertIn("seq !== mvScrollSeq", mv)   # the restore loop stops when the sequence moves on
 
     def test_r2_list_chip_never_wider_than_name_cell(self):
         # 41b caps .hnpc at 220px nowrap; at 900px the Name cell is ~145px, so the list rule must cap chips to the cell.
@@ -161,8 +192,8 @@ class ToolsConfigMap(unittest.TestCase):
         self.assertNotIn("MCP 서버", r[2])   # list ok: drawn once, in the list
 
     def test_r3_report_jump_waits_for_tools_list(self):
-        r = _js(" QSEL = s => s === '.hnw' ? {classList: {contains: () => false}} : null; mainView = 'pipe'; var ST = [];"
-                " hnVdStep = l => ST.push(l); hnVdGo('bad'); PLVIEW = 'tools'; RAF.forEach(f => f()); const a = ST.slice();"
+        r = _js(_ROWS + " HN.data[hnKey('/w/a')].verdict.bad = 3; VIEWS = {'.hncfgw': BOX([])}; var ST = [];"
+                " hnVdStep = l => ST.push(l); hnVdGo('bad'); RAF.forEach(f => f()); const a = ST.slice();"
                 " fetch = getJSON = u => Promise.resolve({ok: true, items: []}); getJSON = fetch;"
                 " loadTools(true).then(() => { const b = ST.slice(); loadTools(true).then(() => console.log(JSON.stringify([a, b, ST, HN.vdPend]))); })",
                 tools=True)
@@ -172,10 +203,10 @@ class ToolsConfigMap(unittest.TestCase):
         self.assertEqual(r[3], "")
 
     def test_r3_report_jump_steps_next_frame_when_list_loaded(self):
-        r = _js(" QSEL = s => s === '.hnw' ? {classList: {contains: () => false}} : null; mainView = 'pipe'; var ST = []; TOOLS = {ok: true, items: []};"
-                " hnVdStep = l => ST.push(l); hnVdGo('check'); PLVIEW = 'tools'; RAF.forEach(f => f()); console.log(JSON.stringify([ST, HN.vdPend]))",
+        r = _js(_ROWS + " HN.data[hnKey('/w/a')].verdict.check = 1; VIEWS = {'.hncfgw': BOX([])}; var ST = []; TOOLS = {ok: true, items: []};"
+                " hnVdStep = l => ST.push(l); hnVdGo('check'); RAF.forEach(f => f()); console.log(JSON.stringify([ST, HN.vdPend, TLV]))",
                 tools=True)
-        self.assertEqual(r, [["check"], ""])
+        self.assertEqual(r, [["check"], "", ["tools"]])
 
     def test_r3_next_step_fold_works_in_tools_list(self):
         r = _js(" var PS = 0; const sel = (x, k) => s => s.split(', ').includes(k) ? x : null;"
@@ -189,7 +220,7 @@ class ToolsConfigMap(unittest.TestCase):
         r = _js(" const CLS = [], SC = []; const el = {dataset: {hnvd: 'v7'}, closest(){ return null; }, classList: {add(c){ CLS.push(c); }},"
                 " scrollIntoView(o){ SC.push(o); }};"
                 " const w = {querySelectorAll(s){ return s === '[data-hnvdl=\"bad\"]' ? [el] : []; }};"
-                " QSEL = s => s === '.tvw' ? w : null; hnVdStep('bad'); console.log(JSON.stringify([HN.vdAt.bad, CLS, SC]))")
+                " QSEL = s => s === '.tvw' ? w : null; mainView = 'tools'; hnVdStep('bad'); console.log(JSON.stringify([HN.vdAt.bad, CLS, SC]))")
         self.assertEqual(r, ["v7", ["hnvdon"], [{"block": "nearest", "inline": "nearest"}]])   # a list row outside .hncfgw is reached
 
 

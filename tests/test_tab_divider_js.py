@@ -1,5 +1,5 @@
 """One header-to-content divider: tab captions (.wvh.wvht) draw no rule except the timeline axis top,
-no extra top padding before the first content, and the Pipelines sub-view switch lives in #tbar (Tokens has none).
+no extra top padding before the first content, and the Pipelines and Tools sub-view switches live in #tbar (Tokens has none).
 Static source reads only."""
 import os
 import re
@@ -44,6 +44,13 @@ class TabDivider(unittest.TestCase):
         self.assertBodyFree(s, "plViewSeg", "web/js/48-pipeline.js")
         self.assertIn("aria-pressed", s)
         self.assertIn(".tbs > .tkvs{margin:0}", src("web/css/41-tools.css"))
+
+    def test_r1_tools_segment_in_toolbar(self):
+        s = src("web/js/47a-tools-tab.js")
+        self.assertIn("tbSlot('tools', tlViewSeg())", s)
+        self.assertNotIn("innerHTML", s)   # the switch never enters the #feed body
+        self.assertIn("aria-pressed", s)
+        self.assertIn("html[data-mv=tools] .wrap{max-width:none}", src("web/css/41-tools.css"))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
-/* Pipeline tab «Tools» view (web/js/47-tools.js) + the view switch buttons (48-pipeline.js plViewSeg) */
+/* Tools tab «Tools» view (web/js/47-tools.js) + the view switch buttons (48-pipeline.js plViewSeg · 47a-tools-tab.js tlViewSeg) */
 .tkvs{display:flex;gap:4px;margin:0 0 10px}
-.tbs > .tkvs{margin:0}   /* Pipelines|Harness report|Tools|Connections sit in the header toolbar slot (#tbar) */
+.tbs > .tkvs{margin:0}   /* Pipelines|Harness report and Tools|Session tools sit in the header toolbar slot (#tbar) */
+html[data-mv=tools] .wrap{max-width:none}   /* same full width as the Pipelines tab these views came from (43-pipeline.css) */
 .tvw .hidnote{margin:4px 0}
 .tvwg{margin-bottom:6px}
 .tvwt{table-layout:fixed}

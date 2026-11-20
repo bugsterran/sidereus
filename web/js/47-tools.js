@@ -1,4 +1,4 @@
-// «Tools» view of the pipeline tab (48-pipeline.js PLVIEW 'tools') — read-only list of skills/agents/commands/MCP/hooks.
+// «Tools» view of the Tools tab (47a TLVIEW 'tools', painted by tlPaint) — read-only list of skills/agents/commands/MCP/hooks.
 // ⚠Metadata only: the list shows names, paths, sizes, counts; config text appears only after a row click (/api/tools/file).
 let TOOLS = null, toolsAt = 0, toolsBusy = false, TOOLF = null;   // TOOLF = {id, name, path, text|err} of the opened row
 const TOOL_KINDS = [['skill', 'Skills'], ['agent', 'Agents'], ['cmd', 'Commands'], ['mcp', 'MCP servers'], ['hook', 'Hooks']];
@@ -11,11 +11,12 @@ async function loadTools(force){
   try{ TOOLS = await getJSON('/api/tools?days=30'); }
   catch(e){ TOOLS = { ok: false, msg: fetchErrMsg(e) }; }
   toolsBusy = false;
-  if(mainView === 'pipe' && PLVIEW === 'tools') plPaint();
+  if(tvwOn()) tlPaint();
   if(typeof hnVdPendRun === 'function') hnVdPendRun();   // a «Check results» jump that arrived before the list
-  if(TOOLS && TOOLS.scanning) setTimeout(() => { if(mainView === 'pipe' && PLVIEW === 'tools') loadTools(true); }, 5000);   // partial counts: poll while visible
+  if(TOOLS && TOOLS.scanning) setTimeout(() => { if(tvwOn()) loadTools(true); }, 5000);   // partial counts: poll while visible
 }
-// The list can carry Claude Code skill/MCP harness rows (else 47b «Config map» draws them).
+function tvwOn(){ return mainView === 'tools' && TLVIEW === 'tools'; }
+// The list can carry Claude Code skill/MCP harness rows (else the Harness report's «Config map» draws them).
 function tvwListed(){ return !!(TOOLS && TOOLS.ok); }
 // Claude Code harness skill/MCP rows for the Tools list: {by: Tools id -> row, miss: {skill, mcp} rows with no list item}.
 // null = no harness data for this project (not loaded, failed, feature off, another platform) -> no decoration, never «none».
@@ -30,7 +31,7 @@ function tvwHn(items){
     if(x.tid && ids.has(x.tid)) by[x.tid] = x;
     else if(k === 'skill' || hnVd(x)) miss[k].push(x);   // ⚠a flagged row with no list item must stay reachable from «Check results»
   }));
-  return { by, miss };
+  return { by, miss, vd: d.verdict };
 }
 // Stage chips in the Name cell, check result in a full-width row below (the Flags cell is too narrow for «Next step»).
 function tvwPipes(h){ return h && Array.isArray(h.pipes) && h.pipes.length ? ' ' + h.pipes.map(hnPipeChip).join('') : ''; }
@@ -70,13 +71,16 @@ function tvwFile(){
 }
 function paintTools(box){
   loadTools(false);
+  // ⚠The only harness load on this tab: without it the rows get no chips/check results when the Tools tab opens first.
+  if(typeof hnLoad === 'function' && typeof PLS !== 'undefined' && !(typeof FEATS !== 'undefined' && FEATS.harness === false)) hnLoad(PLS.proj, false);
   const head = '<div class="wvh wvht"><span>' + esc(T('Tool list · 30-day use')) + '</span></div>';
   let body;
   if(!TOOLS) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   else if(!TOOLS.ok) body = '<div class=hidnote>' + esc(T('Could not read the tool list')) + (TOOLS.msg ? ' — ' + esc(TOOLS.msg) : '') + '</div>';
   else {
     const items = TOOLS.items || [], hn = tvwHn(items);
-    body = (TOOLS.scanning ? '<div class=hidnote>' + esc(T('Counting uses…')) + '</div>' : '')
+    body = (hn ? hnVdLine(hn.vd) : '')   // check line here too, so stepping continues in this list
+      + (TOOLS.scanning ? '<div class=hidnote>' + esc(T('Counting uses…')) + '</div>' : '')
       + '<div class=hidnote>' + esc(T('≈Tokens are estimated from file size · click a row to view its content')) + '</div>'
       + TOOL_KINDS.map(([k, en]) => {
         const rs = items.filter(x => x.kind === k), ms = hn && hn.miss[k] || [];
@@ -92,28 +96,27 @@ function paintTools(box){
       }).join('')
       + (items.length || (hn && hn.miss.skill.length + hn.miss.mcp.length) ? '' : '<div class=hidnote>' + esc(T('No tools found')) + '</div>');
   }
-  // «Config map» (47b) for the pipeline tab's project sits above the lists; the _tvw cache below covers it too.
-  const h = '<div class="brep tvw">' + head + (typeof hnCfgHtml === 'function' && typeof PLS !== 'undefined' ? hnCfgHtml(PLS.proj) : '') + body + '</div>';
+  const h = '<div class="brep tvw">' + head + body + '</div>';
   if(box._tvw === h && box.querySelector('.tvw')) return;   // ⚠30s repaints would reset the <pre> scroll
   box._tvw = h;
   box.innerHTML = h;
 }
 async function tvwOpen(id){
-  if(TOOLF && TOOLF.id === id){ TOOLF = null; plPaint(); return; }
+  if(TOOLF && TOOLF.id === id){ TOOLF = null; tlPaint(); return; }
   const r = ((TOOLS && TOOLS.items) || []).find(x => x.id === id);
   if(!r) return;
   TOOLF = { id, name: r.name, path: r.path, text: null };
-  plPaint();
+  tlPaint();
   let v;
   try{ v = await getJSON('/api/tools/file?id=' + encodeURIComponent(id)); }
   catch(e){ v = { ok: false, msg: e && e.status === 404 ? T('No such item.') : fetchErrMsg(e) }; }
   if(!TOOLF || TOOLF.id !== id) return;
   if(v && v.ok) TOOLF.text = String(v.text || ''); else TOOLF.err = (v && v.msg) || T('Could not read');
-  plPaint();
+  tlPaint();
 }
 document.addEventListener('click', e => {
   if(!e.target.closest) return;
-  if(e.target.closest('[data-tvwx]')){ TOOLF = null; plPaint(); return; }
+  if(e.target.closest('[data-tvwx]')){ TOOLF = null; tlPaint(); return; }
   const r = e.target.closest('.tvwr[data-tid]');
   if(r) tvwOpen(r.dataset.tid);
 });

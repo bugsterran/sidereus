@@ -27,22 +27,21 @@ function plProjPref(o, prop, key, def, ok){
 }
 plProjPref(PLS, 'nowSid', 'sidereus.plnowsid', '', v => typeof v === 'string');
 plProjPref(PLS, 'runSel', 'sidereus.plrunsel', null, v => !!v && typeof v === 'object' && typeof v.sid === 'string' && typeof v.name === 'string' && v.rid != null);
-// «Pipelines | Harness report | Tools | Connections» view switch (harness = 47b hnHtml, tools = 47 paintTools, connections = 47k paintMcpConn).
-// Only Harness hides when feature `harness` is off. ⚠Tools/Connections moved here from the Tokens tab: read 05 mvTkMoved, never the old
-// stored Tokens view key — 46 deletes that key before this file runs.
-const PLVIEWS = ['pipe', 'harness', 'tools', 'conn'];
+// «Pipelines | Harness report» view switch (harness = 47b hnHtml); no switch when Harness is off.
+// ⚠Tools/Session tools moved to their own tab (47a): a stored 'tools'/'conn' was redirected there by 05 mvToolsMoved, so it becomes 'pipe' here.
+const PLVIEWS = ['pipe', 'harness'];
 let PLVIEW = (() => {
-  if(typeof mvTkMoved !== 'undefined' && PLVIEWS.includes(mvTkMoved)){ lsSet('sidereus.plview', mvTkMoved); return mvTkMoved; }
   const v = lsGet('sidereus.plview', 'pipe');
+  if(v === 'tools' || v === 'conn'){ lsSet('sidereus.plview', 'pipe'); return 'pipe'; }
   return PLVIEWS.includes(v) ? v : 'pipe';
 })();
 function plHnOn(){ return PLVIEW === 'harness' && FEATS.harness !== false && typeof hnHtml === 'function'; }
 // Pipeline feature turned back on at run time: the project list cached the 404 (PLS.off) while it was off.
 function plFeatReset(){ if(PLS.off){ PLS.off = false; PLS.projs = null; PLS.data = {}; } }
 function plViewSeg(){
-  const cur = PLVIEW === 'harness' && (!plHnOn() || PLS.off) ? 'pipe' : PLVIEW;   // paintPipe shows no harness body then (feature off / pipeline 404)
-  return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Harness report'], ['tools', 'Tools'], ['conn', 'Connections']]
-    .filter(([k]) => k !== 'harness' || FEATS.harness !== false).map(([k, en]) => '<button class="wkrgb'
+  if(FEATS.harness === false || PLS.off) return '';   // one view left (Harness off / pipeline 404): no switch
+  const cur = PLVIEW === 'harness' && !plHnOn() ? 'pipe' : PLVIEW;   // paintPipe shows no harness body then
+  return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Harness report']].map(([k, en]) => '<button class="wkrgb'
     + (k === cur ? ' on" aria-pressed="true' : '" aria-pressed="false') + '" data-plv="' + k + '">' + esc(T(en)) + '</button>').join('') + '</div>';
 }
 // Single PLVIEW writer for switch clicks and jumps from other views (47b hnVdGo); off the tab it opens the tab.
@@ -418,18 +417,8 @@ async function plApplySet(mode){
 function plPaint(fromPoll){
   if(mainView !== 'pipe') return;
   const box = document.getElementById('feed');
-  if(!box || plSubPaint(box, fromPoll === true)) return;
+  if(!box) return;
   paintPipe(box, fromPoll === true);
-}
-// Tools / Connections bodies: true when one was painted. ⚠Also called from paintPipe — 48b plPoll calls paintPipe directly every poll.
-function plSubPaint(box, fromPoll){
-  if(PLVIEW !== 'tools' && PLVIEW !== 'conn') return false;
-  tbSlot('pipe', plViewSeg());
-  if(PLVIEW === 'conn'){ paintMcpConn(box); return true; }
-  const fe = document.activeElement;   // ⚠poll rebuilds keep keyboard focus and an open title tooltip in the tool lists (same guard as 47b hnRepaint)
-  if(fromPoll && ((fe && fe.closest && fe.closest('.tvw')) || (document.querySelector && document.querySelector('.tvw [title]:hover')))) return true;
-  paintTools(box);
-  return true;
 }
 // «Running N» overview sits under the canvas as a fixed card: at the top its come-and-go moved the chips and canvas on every run start/end.
 // Bodies with no canvas (loading, empty, Workflow/arch panels) get it at their end instead.
@@ -454,12 +443,11 @@ function plFocusKey(el, box){
 function paintPipe(box, fromPoll){
   if(PLDRAG) return;                   // ⚠a repaint mid-drag would drop the dragged node
   if(document.body.classList.contains('dragging')) return;   // ⚠81i grip drag (list width): a poll repaint resets the dragged width
-  if(typeof plSubPaint === 'function' && plSubPaint(box, fromPoll)) return;
   plLoadProjs();
   if(PLS.projs && !PLS.proj && typeof strDefProj === 'function') PLS.proj = strDefProj() || '';   // same default as «Structure»; not remembered until clicked
   if(PLS.projs) plLoad(PLS.proj, false);
   const hv = !PLS.off && plHnOn();
-  tbSlot('pipe', plViewSeg());   // sub-view switch lives in the header toolbar slot; kept with PLS.off so Tools/Connections stay reachable
+  tbSlot('pipe', plViewSeg());   // sub-view switch lives in the header toolbar slot ('' clears it when only one view remains)
   if(!hv && !PLS.off && typeof plNowFollow === 'function') plNowFollow(SESS);   // 48j: select a newly started live run before head and body read the selection
   const now = !hv && !PLS.off && (plNowPickApply(), plNowShown());   // run view (48j) vs Edit; pick applied first so head and body agree
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
