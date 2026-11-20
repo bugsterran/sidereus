@@ -313,3 +313,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ 05 resolves `mainView` to 'pipe' and sets `mvTkMoved`; 46 then deletes the old key; 48 (loads after 46) seeds `PLVIEW` from `mvTkMoved`, never the key, and saves `sidereus.plview`. 05 also calls `tabSet('mbMainView','pipe')`.
 - ⚠Without that `tabSet`, the stored tab stays 'token' and the tkview is gone, so a second reload opens Token › Usage.
 - ⚠Only 05 reads `sidereus.tkview`, and it must stay before 46; reading the key in any file after 46 loses the redirect.
+
+## Claude Code skill/MCP check results live in the Tools list (`47-tools.js` tvwHn · `47b-harness.js` hnVdStep)
+- Cause: «Check results» counts every harness row, but under Claude Code «Config map» no longer draws skill/MCP rows; the list rows carry them, joined by `tid` = Tools `id`.
+- ⇒ `hnVdStep` searches `.tvw` (Config map + list); a flagged row with no list item (stage names an uninstalled skill, server missing from the list) is drawn as a `.tvwmiss` row so the count still has a target (`test_verdict_line_and_rows`).
+- ⚠No harness data (not loaded, failed, feature off, another platform) = plain list rows, never «not installed».

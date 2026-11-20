@@ -51,7 +51,6 @@
 .hnar>.hnsc{flex-shrink:0;min-width:52px;box-sizing:border-box;text-align:center}   /* ⚠fixed width: the chip column starts after the badge, so «Project»/«user»/«?» would shift it per row */   /* scope badge keeps its word; pipeline chips wrap instead */
 .hnps{display:flex;flex-wrap:wrap;gap:3px;flex:1 1 0;min-width:0}   /* ⚠basis 0: an auto basis = all chips on one line, so a wrapping row shrank .hnan and its badge sat left of the other rows */
 .hnpc{font-size:10px;padding:0 5px;border-radius:3px;border:1px solid #2f3f55;color:#8fb2e0;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hncnt{display:flex;gap:4px;margin:12px 0 4px}
 .hncrg{border-bottom:1px dotted currentColor;cursor:help}
 .hnmore>summary{cursor:pointer;font-size:11px;color:#8a94a6;padding:3px 2px;list-style-position:inside}
 .hnmore[open]>summary{margin-bottom:2px}

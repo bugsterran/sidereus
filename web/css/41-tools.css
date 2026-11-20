@@ -18,6 +18,15 @@
 /* ⚠`.tvwt td` nowrap outranks single-class rules: paths wrap so the file name at the end stays visible, flag chips wrap instead of hiding */
 .tvwt td.tvwp{white-space:normal;overflow-wrap:anywhere}
 .tvwt td.tvwfs{white-space:normal}
+.tvwt td.tvwnp{white-space:normal;overflow-wrap:anywhere}
+.tvwt .hnpc{display:inline-block;vertical-align:middle;margin:1px 3px 1px 0;max-width:100%;box-sizing:border-box}   /* ⚠41b caps chips at 220px nowrap; the Name cell is ~145px at 900px, so cap to the cell and let the ellipsis + title carry the rest */
+/* Claude Code harness rows joined by id (47 tvwRow): flagged accent on the row, reason + «Next step» in a full-width row below */
+.tvwr.hnvd-bad td:first-child{box-shadow:inset 2px 0 0 #a05548}
+.tvwr.hnvd-check td:first-child{box-shadow:inset 2px 0 0 #8a6a3a}
+.tvwr.hnvdon td{background:color-mix(in srgb,#7f9cc6 14%,transparent)}
+.tvwt .tvwvdr td{white-space:normal;overflow:visible;padding-top:0}
+.tvwr.tvwmiss{cursor:default}   /* ⚠two classes: `.tvwr{cursor:pointer}` comes later */
+.tvwmiss .tvwp{font-style:italic;color:var(--nx-t3,#8b95a7)}
 .tvwr{cursor:pointer}
 .tvwj{color:#6b7688}
 /* ⚠Scoped [data-ui=next][data-ui] so the 00-core twin skips it (the twin's --nx-panel hover was 1.07:1); t1 tint works on either theme */
@@ -45,3 +54,5 @@ html[data-theme=light] .tvwr.on td{background:var(--nx-hover,#eef2f7)}
 html[data-theme=light] .tvwv{background:var(--nx-panel);border-color:var(--nx-rule)}
 html[data-theme=light] .tvwpre{color:var(--nx-t1)}
 html[data-theme=light] .tvwf{border-color:var(--nx-rule)}
+html[data-theme=light] .tvwr.hnvd-bad td:first-child{box-shadow:inset 2px 0 0 #b0473a}
+html[data-theme=light] .tvwr.hnvd-check td:first-child{box-shadow:inset 2px 0 0 #8a5a12}

@@ -441,7 +441,8 @@ def _mcp_rows(items, uses, st=None):
         n, last = _use(uses, keys)
         status, err, fail_at, ok_at = _health(st or {}, keys + ["mcp:" + re.sub(r"[^A-Za-z0-9_-]", "_", nm)])
         rows.append({"name": nm, "scope": it["scope"], "plug": plug, "transport": _transport(it.get("entry")),
-                     "on": bool(it["on"]), "n": n, "last": last, "status": status, "err": err, "fail_at": fail_at, "ok_at": ok_at})
+                     "on": bool(it["on"]), "n": n, "last": last, "status": status, "err": err, "fail_at": fail_at, "ok_at": ok_at,
+                     "tid": it.get("id", "")})   # opaque toolinv id: the Tools list joins harness rows by it
     return sorted(_sorted_rows(rows), key=lambda r: r["status"] != "fail")   # stable: failed servers first
 
 
@@ -464,12 +465,12 @@ def _skill_rows(items, proj, uses, refs):
         nm = str(it["name"])[:TI_NAME]
         rows.append({"name": nm, "scope": it["scope"],
                      "plug": _plug_name(it.get("base", "")) if it["scope"] == "plugin" else "",
-                     "on": bool(it["on"]), "n": n, "last": last, "pipes": refs.get(nm, []),
+                     "on": bool(it["on"]), "n": n, "last": last, "pipes": refs.get(nm, []), "tid": it.get("id", ""),   # Tools list joins by this id
                      "open": "s:%d" % i if _openable(it["path"], proj) else ""})   # ⚠opaque index, path re-derived on click
     seen = set(r["name"] for r in rows)
     for nm in sorted(x for x in refs if x not in seen):   # named by a stage but not installed
         n, last = _use(uses, ["skill:" + nm])
-        rows.append({"name": nm, "scope": "", "plug": "", "on": True, "n": n, "last": last, "pipes": refs[nm], "open": ""})
+        rows.append({"name": nm, "scope": "", "plug": "", "on": True, "n": n, "last": last, "pipes": refs[nm], "tid": "", "open": ""})
     return _sorted_rows(rows)
 
 

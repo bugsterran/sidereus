@@ -376,7 +376,6 @@
 "도구":"Tool",
 "도구 결과를 받아 모델이 처리하는 중 — 곧 다음 도구나 응답이 나옵니다":"The model is processing a tool result — the next tool call or reply comes soon",
 "도구 목록 · 30일 사용":"Tool list · 30-day use",
-"도구 목록에서 보기":"Show in the tools list",
 "도구 목록을 읽지 못했습니다":"Could not read the tool list",
 "도구 순위":"Tool ranking",
 "도구 실패":"Tool failures",

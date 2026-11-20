@@ -32,6 +32,15 @@ def _js(body):
     return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
+def _js_tools(body):
+    """Like _js, with web/js/47-tools.js loaded first (the «Tools» view that hosts «Config map» and the joined skill/MCP rows)."""
+    src = _STUB + i18n_switch() + "const document = {addEventListener(){}};\n"
+    for p in (os.path.join(ROOT, "web", "js", "47-tools.js"), _F):
+        with open(p, encoding="utf-8") as f:
+            src += f.read() + "\n"
+    return json.loads(subprocess.run(node_e(src + body), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
+
+
 def _js_doc(body):
     """Like _js, but `document` records listeners (LST), querySelector calls (QS) and focus options (FOC)."""
     doc = ("const LST = {}, QS = [], FOC = []; const CSS = {escape: s => s};"
@@ -123,11 +132,6 @@ class Harness(unittest.TestCase):
         self.assertIn("<details class=hnex open><summary", r[1])
         with open(os.path.join(ROOT, "web", "js", "48-pipeline.js"), encoding="utf-8") as f:
             self.assertIn("fe.closest('.hnw')) return;", f.read())   # poll repaint skipped while a chip/row has focus
-
-    def test_counts_hidden_when_tools_off(self):
-        r = _js("const a = hnCounts({skill: 1}); var FEATS = {tools: false}; console.log(JSON.stringify([a, hnCounts({skill: 1})]))")
-        self.assertIn("data-hntools", r[0])
-        self.assertEqual(r[1], "")
 
     def test_code_window_entry(self):
         with open(os.path.join(ROOT, "web", "js", "81-structure-panel.js"), encoding="utf-8") as f:
@@ -275,11 +279,11 @@ class Harness(unittest.TestCase):
         self.assertIn('class="hnpb ailg-cc on"', sw)
 
     def test_mcp_skill_missing_fields(self):
-        data = {"ok": True, "events": [], "rules": [], "agents": [], "counts": {}}
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
+        data = {"ok": True, "events": [], "rules": [], "agents": [], "counts": {}}   # Codex: Claude Code shows these rows in the Tools list
+        h = _js("HN.plat = 'cx'; HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
         self.assertNotIn("MCP 서버", h)
         data.update(mcps=[], skills=[{"name": "sk", "scope": "user"}])
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
+        h = _js("HN.plat = 'cx'; HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
         self.assertIn("MCP 서버", h)
         self.assertIn(">sk<", h)
 
@@ -316,7 +320,13 @@ class Harness(unittest.TestCase):
         self.assertEqual(demo._demo_harness(1e9, "/api/harness/file")[0], 404)
         d["agents"][1]["vd"]["vp"]["pipe"] = "<x>"
         d["mcps"][0]["vd"] = {"lvl": "<bad>", "why": "mcp_fail", "id": "v9"}   # unknown lvl is ignored, never reaches a class
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(d))
+        # R3: Claude Code skill/MCP rows moved to the Tools list, so count over the whole view (Config map + list): every count has a row.
+        from sidereus import demo_tools
+        _, tl = demo_tools._demo_tools(1e9, "/api/tools", "")
+        h = _js_tools("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; TOOLS = %s; toolsAt = NOW;"
+                      " const box = {innerHTML: '', querySelector(){ return null; }}; paintTools(box); console.log(JSON.stringify(box.innerHTML))"
+                      % (json.dumps(d), json.dumps(tl)))
+        self.assertRegex(h, r'<tr class="tvwr hnvd hnvd-bad" data-tid="mcp:000000000007" tabindex=0 data-hnvd="v\d+" data-hnvdl=bad>')
         self.assertLess(h.index("점검 결과"), h.index("훅 흐름"))
         self.assertIn('data-hnvdgo=bad title="다음 항목으로 이동">문제 <b>%d</b>' % vc["bad"], h)
         self.assertIn('data-hnvdgo=check', h)

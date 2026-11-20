@@ -82,19 +82,27 @@ function hnVdLine(c){
       : '<span class="hnvdc hnvdz">' + esc(T(HN_VDL[l], 'verdict')) + ' 0</span>').join('')
     + '<span class="hnvdc hnvdz">' + esc(T('ok')) + ' ' + k('ok') + '</span></div>';
 }
-// Flagged rows live in the Tools view's «Config map»: from the Harness report, open it there first, then step after paint.
+// Flagged rows live in the Tools view («Config map» + the list's skill/MCP rows under Claude Code): from the Harness report, open it there first, then step after paint.
 function hnVdGo(lvl){
   const w = document.querySelector('.hnw');
   if(!(w && w.classList && w.classList.contains('hncfgw'))){
-    HN.cfgOpen = true; lsSet('sidereus.hncfg', '1');
+    HN.cfgOpen = true; lsSet('sidereus.hncfg', '1'); HN.vdPend = lvl;
     plSetView('tools');
-    (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout)(() => hnVdStep(lvl));
+    // ⚠Tools list not loaded yet: its skill/MCP rows are not painted, so 47 loadTools runs the step after its paint.
+    (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout)(() => { if(!(typeof TOOLS !== 'undefined' && TOOLS === null)) hnVdPendRun(); });
     return;
   }
+  HN.vdPend = '';
   hnVdStep(lvl);
 }
+// One pending jump from the report; dropped when the view is no longer Tools.
+function hnVdPendRun(){
+  const l = HN.vdPend;
+  HN.vdPend = '';
+  if(l && mainView === 'pipe' && PLVIEW === 'tools') hnVdStep(l);
+}
 function hnVdStep(lvl){
-  const w = document.querySelector('.hncfgw'), els = w ? Array.from(w.querySelectorAll('[data-hnvdl="' + lvl + '"]')) : [];
+  const w = document.querySelector('.tvw') || document.querySelector('.hncfgw'), els = w ? Array.from(w.querySelectorAll('[data-hnvdl="' + lvl + '"]')) : [];
   if(!els.length) return;
   const i = els.findIndex(e => e.dataset.hnvd === HN.vdAt[lvl]), el = els[(i + 1) % els.length];
   HN.vdAt[lvl] = el.dataset.hnvd;
@@ -168,6 +176,8 @@ function hnFold(rows, used, key){
 }
 // Stage titles through the canvas's en display map (48c loads later; called only at render time).
 function hnStg(t){ return typeof plgShow === 'function' ? plgShow(t) : t; }
+// One «pipeline · stage» chip; also used by the Tools list's skill rows (47 tvwRow).
+function hnPipeChip(p){ return '<span class=hnpc title="' + esc(p.pipe + ' / ' + hnStg(p.stage)) + '">' + esc(p.pipe) + ' · ' + esc(hnStg(p.stage)) + '</span>'; }
 function hnAgents(agents){
   if(!(agents || []).length) return '<div class=hidnote>' + esc(T('No agents')) + '</div>';
   const isUsed = a => (a.pipes || []).length > 0 || a.n > 0;
@@ -175,7 +185,7 @@ function hnAgents(agents){
   return '<div class=hnag>' + hnFold(agents.map(a => {
     const sc = hnSc(a.scope);
     return '<div class="hnar' + hnVdCls(a) + (a.open ? ' hnro" data-hnref="' + esc(a.open) + '" tabindex=0' : '"') + hnVdAttr(a) + '><b class=hnan title="' + esc(a.name) + '">' + esc(a.name) + '</b><em class=hnsc>' + esc(sc) + '</em>'
-      + '<span class=hnps>' + ((a.pipes || []).length ? a.pipes.map(p => '<span class=hnpc title="' + esc(p.pipe + ' / ' + hnStg(p.stage)) + '">' + esc(p.pipe) + ' · ' + esc(hnStg(p.stage)) + '</span>').join('')
+      + '<span class=hnps>' + ((a.pipes || []).length ? a.pipes.map(hnPipeChip).join('')
         : '<i class=hnnone>' + esc(T('not in a pipeline')) + '</i>') + '</span>'
       + '<i class=hncr>' + hnCnt(a.n) + '</i>' + hnVdRow(a) + '</div>';
   }), agents.filter(isUsed).length, 'ag') + '</div>';
@@ -190,7 +200,7 @@ function hnSkills(list){
     const sc = hnSc(x.scope), ps = x.pipes || [];
     return '<div class="hnar' + (x.on === false ? ' hnoff' : '') + hnVdCls(x) + (x.open ? ' hnro" data-hnref="' + esc(x.open) + '" tabindex=0' : '"') + hnVdAttr(x) + '><b class=hnan title="' + esc(x.name) + '">' + esc(x.name) + '</b>'
       + '<em class="hnsc' + (x.plug ? ' hnplg" title="' + esc(sc + ' · ' + x.plug) + '"' : '"') + '>' + esc(x.plug || sc) + '</em>'
-      + '<span class=hnps>' + (ps.length ? ps.map(p => '<span class=hnpc title="' + esc(p.pipe + ' / ' + hnStg(p.stage)) + '">' + esc(p.pipe) + ' · ' + esc(hnStg(p.stage)) + '</span>').join('')
+      + '<span class=hnps>' + (ps.length ? ps.map(hnPipeChip).join('')
         : 'pipes' in x ? '<i class=hnnone>' + esc(T('not in a pipeline')) + '</i>' : '') + '</span>'
       + (x.on === false ? '<em class="hnsc hnoffb">' + esc(T('off', 'state')) + '</em>' : '')   // ⚠after the chips: before them it shifts the chip column
       + '<i class=hncr' + (x.last ? ' title="' + esc(stamp(x.last)) + '"' : '') + '>' + hnCnt(x.n) + '</i>' + hnVdRow(x) + '</div>';
@@ -228,12 +238,6 @@ function hnTools(list){
 }
 function hnToolBox(list, en, ctx){
   return Array.isArray(list) ? '<div class=hnbx><div class=brh2><b>' + esc(T(en, ctx)) + '</b></div>' + hnTools(list) + '</div>' : '';
-}
-function hnCounts(c){
-  c = c || {};
-  if(typeof FEATS !== 'undefined' && FEATS.tools === false) return '';   // jump target off
-  return '<div class=hncnt>' + [['skill', 'Skills'], ['cmd', 'Commands'], ['mcp', 'MCP']].map(([k, en]) =>
-    '<button class=wkrgb data-hntools title="' + esc(T('Show in the tools list')) + '">' + esc(T(en)) + ' <b>' + esc(c[k] || 0) + '</b></button>').join('') + '</div>';
 }
 async function hnLoad(proj, force){
   const k = hnKey(proj), plat = HN.plat;
@@ -497,8 +501,9 @@ function hnCfgHtml(proj){
     + hnSum(d.events) + '</summary>' + hnLegend() + hnLaneHtml(d.events) + '</details>'
     + '<div class=hnbot><div class=hnbx><div class=brh2><b>' + esc(T('Rule files')) + '</b> <i>' + esc(T('load order')) + '</i></div>' + hnRules(d.rules) + '</div>'
     + '<div class=hnbx><div class=brh2><b>' + esc(T('Agents ↔ pipelines')) + '</b></div>' + hnAgents(d.agents) + '</div>'
-    + hnToolBox(d.mcps, 'MCP servers', 'full') + (Array.isArray(d.skills) ? '<div class=hnbx><div class=brh2><b>' + esc(T('Skills')) + '</b></div>' + hnSkills(d.skills) + '</div>' : '') + '</div>'
-    + (HN.plat === 'cc' ? hnCounts(d.counts) : '');   // the «Tools» list they jump to is Claude Code's
+    // Claude Code: skill/MCP rows (stage chips, check results) live in the Tools list below (47 tvwRow); other CLIs keep them here.
+    // ⚠Until /api/tools is loaded and ok the list has no such rows: draw them here so «Check results» still has targets.
+    + (HN.plat === 'cc' && typeof tvwListed === 'function' && tvwListed() ? '' : hnToolBox(d.mcps, 'MCP servers', 'full') + (Array.isArray(d.skills) ? '<div class=hnbx><div class=brh2><b>' + esc(T('Skills')) + '</b></div>' + hnSkills(d.skills) + '</div>' : '')) + '</div>';
   // Project name as plain text: a button inside <summary> would toggle the fold.
   return '<div class="hnw hncfgw"><details class=hncfg' + (HN.cfgShown ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
     + (proj ? ' <i class=hncfgp>' + esc(String(proj).split('/').pop()) + '</i>' : '') + (d && d.ok !== false ? hnVdSum(d.verdict) : '') + '</div></summary>' + body + '</details></div>';
@@ -519,7 +524,7 @@ async function hnOpen(ref, nm){
   else strPopTextSet({ key, name: nm, path: '', text: T('Could not read') + ((v && v.msg) ? ' — ' + hnMsg(v.msg) : ''), lang: '' });
 }
 function hnCardName(el){ const n = el.querySelector('.hncn, .hnan, .hnp'); return n ? n.textContent : ''; }
-// Count buttons jump to the pipeline tab's «Tools» list; cards with a ref open their file.
+// Platform switch, check-result steps, checkpoint filter; cards with a ref open their file.
 document.addEventListener('click', e => {
   if(!e.target.closest) return;
   if(HN.go && e.target.closest('.hnw')){   // the highlight lasts until the next click in the view
@@ -542,10 +547,6 @@ document.addEventListener('click', e => {
     if(b) b.focus({ preventScroll: true });
     return;
   }
-  const c = e.target.closest('[data-hntools]');
-  if(!c || !c.closest('.hnw')) return;
-  if(c.closest('.hncfgw')){ const g = document.querySelector('.tvwg'); if(g && g.scrollIntoView) g.scrollIntoView({ block: 'nearest' }); return; }   // already in Tools: the list sits below
-  plSetView('tools');
 });
 document.addEventListener('keydown', e => {
   const r = e.key === 'Enter' && e.target.closest && e.target.closest('.hnw [data-hnref]');

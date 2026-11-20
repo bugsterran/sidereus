@@ -47,7 +47,7 @@ class HarnessTest(unittest.TestCase):
                       (CX, "CLAUDE_PROJECTS", CX.CLAUDE_PROJECTS), (CX, "_git_root", CX._git_root),
                       (TV, "known_projects", TV.known_projects), (PL, "_proj_ok", PL._proj_ok),
                       (H, "_proj_ok", H._proj_ok), (H, "tool_uses", H.tool_uses), (H, "scanning", H.scanning), (H, "mcp_status", H.mcp_status),
-                      (H, "DATA_DIR", H.DATA_DIR)]
+                      (H, "DATA_DIR", H.DATA_DIR), (TV, "tool_uses", TV.tool_uses)]
         CX.CLAUDE_DIR, CX.CLAUDE_JSON, CX.CLAUDE_PROJECTS = cd, os.path.join(t, "cj.json"), os.path.join(t, "projects")
         CX._git_root = lambda c: ""
         TV.known_projects = lambda: [self.proj]
@@ -55,6 +55,7 @@ class HarnessTest(unittest.TestCase):
         H.tool_uses = lambda d: {"hook:PreToolUse:Bash": {"n": 3, "last": 10}, "hook:PreToolUse:Read": {"n": 9, "last": 20},
                                  "hook:Stop": {"n": 2, "last": 5}, "agent:designer": {"n": 4, "last": 1}}
         H.scanning = lambda: False
+        TV.tool_uses = lambda d: {}   # scan_items() must not read live usage
         H.mcp_status = lambda d: {}
         H.DATA_DIR = os.path.join(t, "data")
         H._EFF_CACHE.clear()
@@ -259,8 +260,9 @@ class HarnessTest(unittest.TestCase):
         b = self._body()
         self.assertEqual([m["name"] for m in b["mcps"]], ["web", "pm", "local", "off"])   # on first, then n desc
         m = {x["name"]: x for x in b["mcps"]}
-        self.assertEqual(m["web"], {"name": "web", "scope": "user", "plug": "", "transport": "http", "on": True, "n": 5, "last": 3,
-                                  "status": "none", "err": "", "fail_at": 0, "ok_at": 0})
+        self.assertEqual({k: v for k, v in m["web"].items() if k != "tid"},
+                         {"name": "web", "scope": "user", "plug": "", "transport": "http", "on": True, "n": 5, "last": 3,
+                          "status": "none", "err": "", "fail_at": 0, "ok_at": 0})
         self.assertEqual((m["pm"]["scope"], m["pm"]["plug"], m["pm"]["transport"], m["pm"]["n"], m["pm"]["last"]),
                          ("plugin", "demo", "sse", 4, 9))   # summed across both key forms
         self.assertEqual((m["local"]["transport"], m["local"]["n"], m["off"]["on"], m["off"]["n"]), ("stdio", 2, False, 0))
@@ -314,6 +316,31 @@ class HarnessTest(unittest.TestCase):
         ag = {a["name"]: a for a in b["agents"]}
         self.assertIn({"pipe": "sk", "stage": "만들기"}, ag["impl"]["pipes"])
         self.assertEqual(H._stage_refs({"pipelines": [{"name": "p", "stages": [{"title": "a"}, {"title": "b", "skill": ""}]}]}, "skill"), {})
+
+    def test_R3_mcp_tid_matches_tools_list_id(self):
+        self._mcp_fixture()
+        b = self._body()
+        ids = {(it["name"], it["scope"]): it["id"] for it in TV._raw_items() if it["kind"] == "mcp"}
+        listed = set(r["id"] for r in TV.scan_items(30) if r["kind"] == "mcp")
+        for m in b["mcps"]:
+            self.assertEqual(m["tid"], ids[(m["name"], m["scope"])], m["name"])
+            self.assertIn(m["tid"], listed, m["name"])   # reachable in the Tools list
+        self.assertNotIn(self.tmp, json.dumps(b["mcps"]))
+
+    def test_R2_R3_skill_tid_matches_tools_list_id(self):
+        self._mcp_fixture()
+        _w(os.path.join(self.proj, ".claude", "pipelines", "sk.json"), {"v": 1, "name": "sk", "title": "t", "defaults": {"model": "inherit", "retry": 0}, "stages": [
+            {"title": "build", "agent": "impl", "task": "x", "skill": "us"}, {"title": "ghost", "agent": "impl", "task": "x", "skill": "ghost"}]})
+        b = self._body()
+        ids = {it["name"]: it["id"] for it in TV._raw_items() if it["kind"] == "skill"}
+        listed = set(r["id"] for r in TV.scan_items(30) if r["kind"] == "skill")
+        sk = {s["name"]: s for s in b["skills"]}
+        for nm in ("us", "ps", "demo:pk"):
+            self.assertEqual(sk[nm]["tid"], ids[nm], nm)
+            self.assertIn(sk[nm]["tid"], listed, nm)
+        self.assertEqual(sk["us"]["pipes"], [{"pipe": "sk", "stage": "build"}])
+        self.assertEqual(sk["ghost"]["tid"], "")   # named by a stage, not installed: no Tools row to join
+        self.assertNotIn(self.tmp, json.dumps(b["skills"]))
 
     def test_skill_open_outside_roots_refused(self):
         out = os.path.join(self.tmp, "outside", "SKILL.md")

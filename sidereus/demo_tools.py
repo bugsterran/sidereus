@@ -51,8 +51,17 @@ def _demo_diag():
     return json.loads(json.dumps(DEMO_DIAG))
 
 
+_DEMO_ID = "%s:%012x"   # (kind, 1-based DEMO_TOOLS index): one format for list ids and harness tids
+
+
+def _demo_tid(kind, name):
+    """The _demo_tools row id for (kind, name), so demo harness rows join the Tools list like the real toolinv ids; "" = not listed."""
+    i = next((i for i, r in enumerate(DEMO_TOOLS) if r[0] == kind and r[1] == name), None)
+    return "" if i is None else _DEMO_ID % (kind, i + 1)
+
+
 def _demo_tools(a, path, tid):
-    rows = [{"id": "%s:%012x" % (k, i + 1), "kind": k, "name": n, "scope": sc, "proj": pj, "path": p, "bytes": b,
+    rows = [{"id": _DEMO_ID % (k, i + 1), "kind": k, "name": n, "scope": sc, "proj": pj, "path": p, "bytes": b,
              "tok": int(round(b / 3.5)), "on": on, "ro": ro, "uses": us, "last": int(a - lh * H) if us else 0,
              "sha": "%064x" % (i + 1), "flags": fl}
             for i, (k, n, sc, pj, p, b, on, ro, us, lh, fl) in enumerate(DEMO_TOOLS)]
@@ -108,6 +117,9 @@ def _demo_harness(a, path):
                         "pipes": [{"pipe": "release", "stage": "노트"}]}],
             "counts": {"skill": 2, "cmd": 1, "mcp": 2},
             "evidence": sorted(_demo_evidence(a) + _demo_ci(a) + _demo_incident_rows(a), key=lambda r: -r["ts"])}
+    for k, key in (("mcp", "mcps"), ("skill", "skills")):
+        for r in body[key]:
+            r["tid"] = _demo_tid(k, r["name"])
     rep = _demo_report(harness_trail.report(body["evidence"], "", git=False))
     p = _demo_person(a)
     body["report"] = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)

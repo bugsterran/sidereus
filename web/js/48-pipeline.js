@@ -45,7 +45,7 @@ function plViewSeg(){
     .filter(([k]) => k !== 'harness' || FEATS.harness !== false).map(([k, en]) => '<button class="wkrgb'
     + (k === cur ? ' on" aria-pressed="true' : '" aria-pressed="false') + '" data-plv="' + k + '">' + esc(T(en)) + '</button>').join('') + '</div>';
 }
-// Single PLVIEW writer for switch clicks and jumps from other views (47b hnVdGo / data-hntools); off the tab it opens the tab.
+// Single PLVIEW writer for switch clicks and jumps from other views (47b hnVdGo); off the tab it opens the tab.
 function plSetView(v){
   v = PLVIEWS.includes(v) ? v : 'pipe';
   const on = mainView === 'pipe';

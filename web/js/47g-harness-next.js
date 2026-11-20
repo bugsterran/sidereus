@@ -3,7 +3,7 @@
 // ⚠The relay never sends by itself: «Draft instruction» → preview + recipient pick → «Confirm — send» → /api/dm (AGENTS.md rule 7).
 const HN_NX_INC = ['refixed', 'reverted', 'unchecked'], HN_NX_GD = ['skipgate'];
 const HN_NX_WHO = { self: 'Yourself', ai: 'Hand to an AI session', owner: 'Owner decision' };
-const HN_NX_SEL = '.hnw .hnnx, #plevp .hnnx';   // ⚠capture handlers: a #plevp fold must not reach 48i's popover click handler either
+const HN_NX_SEL = '.hnw .hnnx, .tvw .hnnx, #plevp .hnnx';   // ⚠capture handlers: a #plevp fold must not reach 48i's popover click handler either; .tvw = Tools list rows (47 tvwVdRow)
 const HN_NXS = { guide: {}, busy: {}, ctx: {}, dr: null };   // guide per UI language · ctx = last rendered row per fold key · dr = open draft
 function hnNxOpen(){ return HN.nx || (HN.nx = {}); }
 function hnNxLang(){ return typeof LANG !== 'undefined' && LANG === 'en' ? 'en' : 'ko'; }
@@ -138,7 +138,7 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('keydown', e => { if(e.target && e.target.closest && e.target.closest(HN_NX_SEL)) e.stopPropagation(); }, true);
 document.addEventListener('change', e => {
-  const s = e.target && e.target.closest && e.target.closest('.hnw [data-hnnxs], #plevp [data-hnnxs]');
+  const s = e.target && e.target.closest && e.target.closest('.hnw [data-hnnxs], .tvw [data-hnnxs], #plevp [data-hnnxs]');
   if(s && HN_NXS.dr) HN_NXS.dr.sid = s.value;
 }, true);
 // ⚠'toggle' does not bubble: capture phase.

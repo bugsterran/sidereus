@@ -1,7 +1,7 @@
 // Korean for the pipeline tab «Harness» view (47b-harness.js).
 Object.assign(I18N.ko, {
   'Tool runs': '도구 실행', 'no hooks': '훅 없음', 'No rule files': '규칙 파일이 없습니다',
-  'No agents': '에이전트가 없습니다', 'not in a pipeline': '파이프라인에 없음', 'Show in the tools list': '도구 목록에서 보기',
+  'No agents': '에이전트가 없습니다', 'not in a pipeline': '파이프라인에 없음',
   'Could not read the harness': '하네스를 읽지 못했습니다', 'Counting runs…': '실행 횟수 집계 중…', 'Hook flow': '훅 흐름',
   'Rule files': '규칙 파일', 'load order': '읽는 순서', 'Agents ↔ pipelines': '에이전트 ↔ 파이프라인', 'Harness map': '하네스 지도',
   'Estimate — guessed from the hook event and its config': '추정 — 훅 종류와 설정으로 어림한 값',
