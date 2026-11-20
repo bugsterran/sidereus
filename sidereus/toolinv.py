@@ -222,7 +222,8 @@ def _mcp_items(file, key, servers, scope, proj, disabled=(), ro=False, on=True):
     return out
 
 
-def _hook_items(file, hooks, scope, proj, ro=False):
+def _hook_items(file, hooks, scope, proj, ro=False, on=True):
+    # A disabled plugin's hooks.json stays on disk but Claude Code does not load it, so plugin hooks take the plugin's flag.
     out = []
     for ev in sorted(hooks if isinstance(hooks, dict) else {}):
         for i, g in enumerate(hooks[ev] if isinstance(hooks[ev], list) else []):
@@ -231,7 +232,7 @@ def _hook_items(file, hooks, scope, proj, ro=False):
             m = g.get("matcher")
             nm = str(ev) + (" " + str(m) if isinstance(m, str) and m else "")
             out.append(dict(kind="hook", scope=scope, proj=proj, name=nm, path=file, file=file,
-                            key=["hooks", ev, i], on=True, ro=ro, entry=g, ukey=""))
+                            key=["hooks", ev, i], on=on, ro=ro, entry=g, ukey=""))
     return out
 
 
@@ -285,7 +286,7 @@ def _raw_items():
         mj = os.path.join(d, ".mcp.json")
         items += _mcp_items(mj, ["mcpServers"], _read_json(mj).get("mcpServers"), "plugin", "", ro=True, on=on)
         hj = os.path.join(d, "hooks", "hooks.json")
-        items += _hook_items(hj, _read_json(hj).get("hooks"), "plugin", "", ro=True)
+        items += _hook_items(hj, _read_json(hj).get("hooks"), "plugin", "", ro=True, on=on)
     out, seen = [], set()
     for it in items:
         it["id"] = make_id(it["kind"], it["file"], it["key"])

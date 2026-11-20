@@ -157,6 +157,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⚠A sandbox-blocked run fails with a non-zero exit and is recorded as a real FAIL; a permission-denied call never runs, so no Post event and no row.
 - **Plugin and `sidereus setup-claude` together register everything twice** — each hook fires twice and two `sidereus` MCP servers appear.
   ⚠Use one: the plugin, or the manual hooks/MCP that `setup-claude` prints. Switching = remove the other first.
+- **«Tools» showed a disabled plugin's hooks as on** — its skills and MCP servers took `enabledPlugins`, but `_hook_items` hard-coded `on=True`, and `hooks/hooks.json` stays on disk after the plugin is turned off.
+  ⇒ `_hook_items(..., on=)`; the plugin loop passes the plugin's flag like `_md_items`/`_mcp_items`. Test `test_disabled_plugin_hooks_off`.
+  ⚠User/project hook entries stay `on=True` — Claude Code has no per-entry off switch; a new plugin item kind must take `on` too.
 - **An agent is keyed by its frontmatter `name`, not its file name** — the Agent tool's `subagent_type` is the frontmatter name, so `rev.md` with `name: reviewer` showed 0 runs in the harness while «Tools» named it «reviewer».
   ⇒ Every agent list goes through `toolinv.agent_name` (frontmatter `name`, else file name); `pipeline._agent_files` keeps the path server-side.
   ⚠Frontmatter keys are column-0 only (a nested `  name:` is not the agent's); config readers use `ctxsrc.read_text`/`_json_file` (leading BOM dropped) and type-check every value (`disabledMcpjsonServers` string, `env` list, top-level `[]`).

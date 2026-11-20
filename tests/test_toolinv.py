@@ -101,6 +101,16 @@ class ToolInvTest(unittest.TestCase):
         self.assertTrue(by[("mcp", "plugin", "pw")]["ro"])
         self.assertFalse(by[("skill", "user", "ship")]["ro"])
 
+    def test_disabled_plugin_hooks_off(self):
+        plug = os.path.join(self.home, "plugins", "cache", "mk", "pl", "1.0")
+        self._w(os.path.join(plug, "hooks", "hooks.json"),
+                json.dumps({"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": []}]}}))
+        self.assertTrue(self._by()[("hook", "plugin", "PreToolUse Bash")]["on"])
+        self._w(os.path.join(self.home, "settings.json"), json.dumps({"enabledPlugins": {"pl@mk": False}}))
+        by = self._by()
+        self.assertFalse(by[("hook", "plugin", "PreToolUse Bash")]["on"])
+        self.assertFalse(by[("mcp", "plugin", "pw")]["on"])
+
     def test_plugin_agent_templates_and_cmd_skill_fold(self):
         plug = os.path.join(self.home, "plugins", "cache", "mk", "pl", "1.0")
         self._w(os.path.join(plug, "agents", "real.md"), "---\nname: real\n---\n")
