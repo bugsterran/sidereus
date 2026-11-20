@@ -1,6 +1,6 @@
 // «Preferences» settings category (90-settings.js cfgPaneMe): screen prefs in UIS, server prefs via /api/prefs.
 // ⚠Empty storage must reproduce the stock screen byte for byte: every normaliser returns the built-in default for missing/bad input.
-const MP_TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat', 'tools'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
+const MP_TABS = ['pipe', 'time', 'struct', 'tools', 'br', 'token', 'hist', 'retro', 'chat'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
 // ⚠New tabs go last: the shortcut digit is the rail position, so a tab inserted earlier would renumber every tab after it.
 function mpJson(k){ try{ return JSON.parse(UIS.getItem(k) || 'null'); }catch(e){ return null; } }
 function mpPut(k, v){ try{ if(v == null) UIS.removeItem(k); else UIS.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); return true; }catch(e){ return false; } }
@@ -10,7 +10,10 @@ function mpStart(raw){ return MP_TABS.includes(raw) ? raw : 'last'; }
 function mpOrder(raw, all, lock){
   const o = raw && typeof raw === 'object' ? raw : {};
   const order = (Array.isArray(o.order) ? o.order : []).filter((k, i, a) => all.includes(k) && a.indexOf(k) === i);
-  all.forEach(k => { if(!order.includes(k)) order.push(k); });
+  // A key missing from a saved order (a tab added after it was saved) goes right after its stock predecessor, not last,
+  // so a new tab lands where the stock layout puts it without discarding the saved order; with no predecessor saved it goes last.
+  all.forEach((k, i) => { if(order.includes(k)) return; let j = i - 1; while(j >= 0 && !order.includes(all[j])) j--;
+    if(j < 0) order.push(k); else order.splice(order.indexOf(all[j]) + 1, 0, k); });
   let hide = (Array.isArray(o.hide) ? o.hide : []).filter((k, i, a) => all.includes(k) && k !== lock && a.indexOf(k) === i);
   if(hide.length >= all.length) hide = [];   // never an empty strip
   return {order: order, hide: hide};

@@ -329,3 +329,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `hnVdStep` searches the current view only (`.hncfgw` in the Harness report, `.tvw` in the Tools tab); past the last row `hnVdGo` hands off to the other view via `HN.vdPend`/`HN.vdTo` + `hnVdPendRun`; a flagged row with no list item (stage names an uninstalled skill, server missing from the list) is drawn as a `.tvwmiss` row so the count still has a target (`test_verdict_line_and_rows`).
 - ⚠No harness data (not loaded, failed, feature off, another platform) = plain list rows, never «not installed».
 - ⚠A hand-off switches tabs, and 92 `mvScrollBack` then re-applies that tab's saved scrollTop for up to 4 s, which undid the step's `scrollIntoView` (★live 2026-11-20: row at top 3269 while the feed showed 104–1040) ⇒ `hnVdStep` calls 92 `mvScrollStop()` right before it scrolls (`test_r3_step_ends_tab_scroll_restore`).
+
+## A tab added after a saved tab order lands at its stock place (`90b-mypref.js` mpOrder)
+- Cause: `mpOrder` appended every key missing from `mbTabs` last, so moving Tools in `MP_TABS` changed nothing on a screen whose order was saved before Tools existed.
+- ⇒ A missing key goes right after its stock predecessor in the saved order; with no predecessor saved it is appended (`test_r1_old_saved_order_gets_tools_below_structure` · `test_tabs_normalise`).
+- ⚠Shortcut digits follow the rail position (`buildMv` kbN): inserting a tab shifts every later tab's digit.

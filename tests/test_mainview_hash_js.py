@@ -107,11 +107,11 @@ class MainViewHash(unittest.TestCase):
         self.assertEqual(boot("#pipelines", ui={"sidereus.plview": "harness"}, full=True), ["pipe", "", []])
         self.assertEqual(boot("#tools", full=True), ["tools", "", []])
 
-    def test_r1_tools_tab_is_last_and_keeps_digits(self):
-        """Shortcut digit = rail position (92 buildMv kbN): the new tab goes last so every older tab keeps its digit."""
+    def test_r1_tools_tab_below_structure(self):
+        """Tools sits right below Structure (both read a repo's setup); shortcut digit = rail position (92 buildMv kbN)."""
         mp = _src("90b-mypref.js")
         tabs = json.loads(re.search(r"^const MP_TABS = (\[[^\]]*\]);", mp, re.M).group(1).replace("'", '"'))
-        self.assertEqual(tabs, ["pipe", "time", "struct", "br", "token", "hist", "retro", "chat", "tools"])
+        self.assertEqual(tabs, ["pipe", "time", "struct", "tools", "br", "token", "hist", "retro", "chat"])
         mv = _src("92-mainview-tabs.js")
         self.assertNotRegex(re.search(r"^const TAB_FEAT = .*$", mv, re.M).group(0), r"tools")   # reachable with Pipelines off
         self.assertIn("tools: T('Tools')", mv)

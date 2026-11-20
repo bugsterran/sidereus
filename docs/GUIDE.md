@@ -98,7 +98,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 
 ## Tools tab
 
-The **Tools** tab (last in the tab row, `/#tools`) has its own view switch «Tools | Session tools». A view saved, or linked, from where these views used to be (the Tokens or Pipelines tab) opens the matching view here once.
+The **Tools** tab (right below Structure, `/#tools`) has its own view switch «Tools | Session tools». A view saved, or linked, from where these views used to be (the Tokens or Pipelines tab) opens the matching view here once.
 
 ### Tools
 

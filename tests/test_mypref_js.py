@@ -123,7 +123,7 @@ A.mpma(''); R.maClr = c.UIS.getItem('mbMainAcct'); R.maRd = c.RD;
 R.omRow = vm.runInContext('mpMainAcctRow()', c); R.omAct = 'mpom' in A;
 """
 
-TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat', 'tools']
+TABS = ['pipe', 'time', 'struct', 'tools', 'br', 'token', 'hist', 'retro', 'chat']
 
 # R4: server setting via the shared uiConfirm; Cancel/Esc = old false branch, nothing posted before it resolves.
 SRV = i18n_prelude("'en'", ("T", "KE", "TE")) + r"""
@@ -177,13 +177,13 @@ class MyPref(unittest.TestCase):
 
     def test_tabs_normalise(self):
         self.assertEqual(self.R["tabs0"], {"order": TABS, "hide": []})
-        self.assertEqual(self.R["tabs1"]["order"], ["retro", "chat", "pipe", "time", "struct", "br", "token", "hist", "tools"])
+        self.assertEqual(self.R["tabs1"]["order"], ["retro", "chat", "pipe", "time", "struct", "tools", "br", "token", "hist"])
         self.assertEqual(self.R["tabs1"]["hide"], ["chat"])     # 'time' dropped, unknown/dupes dropped
         self.assertEqual(self.R["tabs2"], {"order": TABS, "hide": []})
 
-    def test_r1_old_saved_order_gets_tools_last(self):
-        # R1: prefs saved before the Tools tab keep their order and hidden tabs; Tools is appended last and shown
-        self.assertEqual(self.R["tabs3"], {"order": ["chat", "pipe", "time", "struct", "br", "token", "hist", "retro", "tools"], "hide": ["retro"]})
+    def test_r1_old_saved_order_gets_tools_below_structure(self):
+        # Prefs saved before the Tools tab keep their order and hidden tabs; Tools goes after its stock predecessor and is shown
+        self.assertEqual(self.R["tabs3"], {"order": ["chat", "pipe", "time", "struct", "tools", "br", "token", "hist", "retro"], "hide": ["retro"]})
 
     def test_time_unhideable(self):
         self.assertEqual(self.R["hideTime"]["hide"], [])
