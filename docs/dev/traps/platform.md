@@ -157,6 +157,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⚠A sandbox-blocked run fails with a non-zero exit and is recorded as a real FAIL; a permission-denied call never runs, so no Post event and no row.
 - **Plugin and `sidereus setup-claude` together register everything twice** — each hook fires twice and two `sidereus` MCP servers appear.
   ⚠Use one: the plugin, or the manual hooks/MCP that `setup-claude` prints. Switching = remove the other first.
+- **A test that sets only `HOME` fails on Windows** — Windows Python resolves `~` from `USERPROFILE`; `test_R4_path_is_tools_form` kept dev CI red on both Windows jobs (★2026-11-19 42476d10 → 11-20, 3 runs).
+  ⇒ Patch `os.path.expanduser` or set `HOME` and `USERPROFILE` together; build expected `~` paths with `os.path.join` (`_abbrev` keeps `os.sep`).
+  ⚠macOS/Linux gates cannot catch this — only the Windows CI jobs run it.
 - **«Tools» showed a disabled plugin's hooks as on** — its skills and MCP servers took `enabledPlugins`, but `_hook_items` hard-coded `on=True`, and `hooks/hooks.json` stays on disk after the plugin is turned off.
   ⇒ `_hook_items(..., on=)`; the plugin loop passes the plugin's flag like `_md_items`/`_mcp_items`. Test `test_disabled_plugin_hooks_off`.
   ⚠User/project hook entries stay `on=True` — Claude Code has no per-entry off switch; a new plugin item kind must take `on` too.

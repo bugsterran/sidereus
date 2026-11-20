@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from tests._load import load, sidereus
 from tests.test_mcp_conn import CXS, NOW, S1, S2, SECRET, _iso, _w
@@ -154,15 +155,14 @@ class McpConnKindsTest(unittest.TestCase):
 
     def test_R4_path_is_tools_form(self):
         self._s1()
-        saved = os.environ.get("HOME")
-        os.environ["HOME"] = self.tmp
-        try:
+        # Patch expanduser, not HOME: Windows Python resolves «~» from USERPROFILE and ignores HOME.
+        real = os.path.expanduser
+        with mock.patch("os.path.expanduser", lambda p: self.tmp + p[1:] if p.startswith("~") else real(p)):
             b = MC.conn(S1)
-        finally:
-            os.environ["HOME"] = saved
-        self.assertEqual(self._by(b, "skill")["alpha"]["path"], "~/claude/skills/alpha/SKILL.md")
-        self.assertEqual(self._by(b, "agent")["builder"]["path"], "~/repo/.claude/agents/builder.md")
-        self.assertEqual(self._by(b, "hook")["Stop"]["path"], "~/claude/settings.json")
+        tl = lambda *parts: os.path.join("~", *parts)   # «~» + os.sep form, as toolinv._abbrev builds it
+        self.assertEqual(self._by(b, "skill")["alpha"]["path"], tl("claude", "skills", "alpha", "SKILL.md"))
+        self.assertEqual(self._by(b, "agent")["builder"]["path"], tl("repo", ".claude", "agents", "builder.md"))
+        self.assertEqual(self._by(b, "hook")["Stop"]["path"], tl("claude", "settings.json"))
 
     def test_cap_keeps_used_reports_more(self):
         self._s1()
