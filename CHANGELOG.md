@@ -5,13 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-21
+
 ### Added
 
-- «Session tools» (Tools tab): pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi (pi through the Sidereus pi extension, including calls made inside `codemode`). A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself. The orbit fills the window height; more servers than fit on a ring spread over a staggered grid around the centre instead of overlapping. Chips «MCP | Skills | Agents | Hooks» switch the orbit to the skills (including slash commands), agents and hook events a Claude Code session can load, each with that session's call or run count (unused items dimmed; never hook commands or output) and a «Task» request only; on Codex, pi and other CLIs those chips show «Not read for this CLI yet».
+- «Session tools» (Tools tab): pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi (pi through the Sidereus pi extension, including calls made inside `codemode`). A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself. The orbit fills the window height; more servers than fit on a ring spread over a staggered grid around the centre instead of overlapping. The project name in the centre shows in full (a smaller font for long names instead of an ellipsis), and a failed node keeps its error code on one line. Chips «MCP | Skills | Agents | Hooks» switch the orbit to the skills (including slash commands), agents and hook events a Claude Code session can load, each with that session's call or run count (unused items dimmed; never hook commands or output) and a «Task» request only; on Codex, pi and other CLIs those chips show «Not read for this CLI yet».
 
 ### Changed
 
 - «Tools» moved from the Tokens tab to its own tab, right below Structure (`/#tools`), with the view switch «Tools | Session tools» and a «Check results» line above the list. The Tokens tab shows token usage only; a saved Tokens › Tools view or an old link opens the Tools tab.
+- Tab shortcuts: with «Tools» right below Structure, the digit shortcuts of the tabs after it (Branches through Chat) move up by one; a tab order saved before «Tools» existed gets it inserted after Structure instead of at the end.
 - «Config map» moved from the top of Tools into the Harness report as a fold, and no longer repeats the Tools list for Claude Code: its «MCP servers» and «Skills» boxes and the Skills/Commands/MCP count buttons are gone (the boxes return only while the list has not loaded). Skill rows in the list now carry the «pipeline · stage» chips, flagged skill and MCP rows carry the check-result mark with its reason and «Next step», and a skill a stage names but that is not installed shows as a «not installed» row, so «Check results» still reaches every flagged row (its steps continue into the Tools tab list). Codex, Gemini and pi keep the boxes.
 - Confirmations (pipeline «Remove» and apply mode, «Preferences» server, Claude Code and display-reset settings, mailbox watch, «Saved views» delete and overwrite) open an in-page dialog instead of the browser's `confirm()` box: translated labels, follows the theme, keeps Tab inside, Esc cancels, focus returns to the control that opened it, and long bodies wrap and scroll. The «Saved views» «Save» name and the timeline range «Custom…» hours use the same dialog instead of the browser's `prompt()` box (Enter saves, Esc cancels).
 - Error messages (a mailbox message that could not be sent, a failed pipeline «Remove» or apply-mode change, a blocked work-log popup) show in the same in-page dialog with one «Close» button instead of the browser's `alert()` box.
@@ -21,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - «Session tools»: the «claude.ai connectors» node no longer cuts its name and status in English; it shows the login-needed count and keeps the full line in its tooltip. Small nodes step their name size down before cutting it, and a single count reads «1 call» / «1 run».
 - In-page dialogs: after a confirmed change redraws the screen (pipeline apply mode, timeline «Custom…» hours), keyboard focus returns to the redrawn control instead of the page; in a text prompt, a click on the title or body text keeps the cursor in the field.
 - «Tools» lists the hooks of a disabled plugin as off, as its skills and MCP servers already were.
+- Pipelines: Delete or Backspace no longer removes the selected canvas stage while another view («Harness report») is showing.
 - In-page dialogs: Esc while an input method is composing ends the composition and keeps a text prompt open with what was typed, as the browser's `prompt()` did; a plain Esc afterwards still cancels.
 - In-page dialogs: closing one by pressing Esc repeatedly while typing with an input method no longer leaves every later dialog refused until a reload; the guided tour no longer takes the dialog's keys; a click outside keeps focus in the text field; a reopened dialog starts at the top. A pipeline apply-mode change confirmed while the list refreshed is written when nothing changed, and says so when it was refused. The mailbox watch «Save» writes once on a double click, a same-for-all «Auto-compact» save no longer flips the pane to «Per account» for a moment, and a long unbroken name no longer runs out of the toast.
 
@@ -1151,7 +1155,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/bugsterran/sidereus/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/bugsterran/sidereus/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/bugsterran/sidereus/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/bugsterran/sidereus/compare/v0.18.0...v0.19.0
