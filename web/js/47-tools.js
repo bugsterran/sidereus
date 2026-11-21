@@ -7,7 +7,7 @@ const TOOL_FLAG = { unused: 'unused', dup: 'duplicate', near: 'similar', shadow:
 // «overridden» = a user agent that a same-name project agent replaces in those projects; the tooltip names them.
 function tvwFlagTip(r, f){
   return f === 'shadow' && Array.isArray(r.shadowBy) && r.shadowBy.length
-    ? ' title="' + esc(T('The project agent of the same name is used in') + ': ' + r.shadowBy.map(p => String(p).split('/').pop()).join(', ')) + '"' : '';
+    ? ' title="' + esc(T('The project agent of the same name is used in') + ': ' + r.shadowBy.map(p => String(p).split(/[\\/]/).pop()).join(', ')) + '"' : '';
 }
 async function loadTools(force){
   const now = Date.now();
@@ -48,7 +48,7 @@ function tvwPipes(h){ return h && Array.isArray(h.pipes) && h.pipes.length ? ' '
 function tvwVdRow(h){ return h && hnVd(h) ? '<tr class=tvwvdr><td colspan=7>' + hnVdRow(h) + '</td></tr>' : ''; }
 function tvwRow(r, h){
   const sc = TOOL_SCOPE[r.scope] ? T(TOOL_SCOPE[r.scope]) : r.scope;
-  const pj = r.proj ? String(r.proj).split('/').pop() : '';
+  const pj = r.proj ? String(r.proj).split(/[\\/]/).pop() : '';
   const fl = (r.flags || []).map(f => TOOL_FLAG[f] ? '<em class="tvwf tvwf-' + esc(f) + '"' + tvwFlagTip(r, f) + '>' + esc(T(TOOL_FLAG[f])) + '</em>' : '').join('');
   const ps = tvwPipes(h), nc = ps ? '"brn tvwnp"' : 'brn';
   return '<tr class="tvwr' + (TOOLF && TOOLF.id === r.id ? ' on' : '') + (r.on ? '' : ' off') + (h ? hnVdCls(h) : '') + '" data-tid="' + esc(r.id) + '" tabindex=0' + (h ? hnVdAttr(h) : '') + '>'
