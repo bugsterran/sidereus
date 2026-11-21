@@ -104,6 +104,7 @@ The **Tools** tab (right below Structure, `/#tools`) has its own view switch «T
 
 - Skills, agents, commands, MCP servers and hooks with 30-day use. A «Check results» line above the list counts flagged config rows; click «problems» / «to check» to step through them. «Config map» is in the [Harness report](#harness-report-did-the-work-come-out-right).
 - For Claude Code, a skill used by a pipeline stage shows a «pipeline · stage» chip in its row, and a flagged skill or MCP server row carries its check result underneath. A skill a stage names but that is not installed is listed at the end of «Skills» as «not installed».
+- A user agent that has the same name as a project agent is marked «overridden»: Claude Code uses the project one in that project. Hover the mark to see which projects.
 
 ### Session tools
 

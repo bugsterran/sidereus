@@ -302,7 +302,8 @@ Object.assign(I18N.ko, {
   'Measure again · last fetched {t}': '다시 잰다 · 마지막 조회 {t}',
   // 47-tools.js
   'Agents': '에이전트', 'Commands': '명령', 'MCP servers': 'MCP', 'project': '프로젝트', 'plugin': '플러그인',
-  'unused': '미사용', 'duplicate': '중복', 'similar': '비슷함',
+  'unused': '미사용', 'duplicate': '중복', 'similar': '비슷함', 'overridden': '가려짐',
+  'The project agent of the same name is used in': '같은 이름의 프로젝트 에이전트가 대신 쓰이는 곳',
   // 47b-harness.js
   'injects': '주입', 'can block': '차단 가능', 'log only': '기록만', 'binary|hook': '실행 파일', 'external': '외부 파일', 'unknown': '알 수 없음',
   'compiled binary — effect cannot be read from its text': '컴파일된 실행 파일 — 내용으로 효과를 알 수 없음',

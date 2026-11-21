@@ -335,6 +335,17 @@ def _flags(rows):
             if r["name"] in near:
                 f.append("near")
             r["flags"] = f
+    # Claude Code loads one agent per name, project .claude/agents over ~/.claude/agents (plugin agents are
+    # namespaced, so they never collide). Only the user row is marked: in the listed projects it is not the one used.
+    # Skills are left out: their documented order is the reverse (personal over project).
+    by_proj = {}
+    for r in by.get("agent", []):
+        if r["scope"] == "project" and r["on"] and r["proj"]:
+            by_proj.setdefault(r["name"], []).append(r["proj"])
+    for r in by.get("agent", []):
+        if r["scope"] == "user" and r["on"] and r["name"] in by_proj:
+            r["flags"].append("shadow")
+            r["shadowBy"] = sorted(set(by_proj[r["name"]]))
 
 
 def scan_items(days=30):

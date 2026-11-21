@@ -3,7 +3,12 @@
 let TOOLS = null, toolsAt = 0, toolsBusy = false, TOOLF = null;   // TOOLF = {id, name, path, text|err} of the opened row
 const TOOL_KINDS = [['skill', 'Skills'], ['agent', 'Agents'], ['cmd', 'Commands'], ['mcp', 'MCP servers'], ['hook', 'Hooks']];
 const TOOL_SCOPE = { user: 'user', project: 'project', plugin: 'plugin' };   // shown through T(); an unknown scope is shown raw
-const TOOL_FLAG = { unused: 'unused', dup: 'duplicate', near: 'similar' };
+const TOOL_FLAG = { unused: 'unused', dup: 'duplicate', near: 'similar', shadow: 'overridden' };
+// «overridden» = a user agent that a same-name project agent replaces in those projects; the tooltip names them.
+function tvwFlagTip(r, f){
+  return f === 'shadow' && Array.isArray(r.shadowBy) && r.shadowBy.length
+    ? ' title="' + esc(T('The project agent of the same name is used in') + ': ' + r.shadowBy.map(p => String(p).split('/').pop()).join(', ')) + '"' : '';
+}
 async function loadTools(force){
   const now = Date.now();
   if(toolsBusy || (!force && now - toolsAt < 60000)) return;
@@ -44,7 +49,7 @@ function tvwVdRow(h){ return h && hnVd(h) ? '<tr class=tvwvdr><td colspan=7>' + 
 function tvwRow(r, h){
   const sc = TOOL_SCOPE[r.scope] ? T(TOOL_SCOPE[r.scope]) : r.scope;
   const pj = r.proj ? String(r.proj).split('/').pop() : '';
-  const fl = (r.flags || []).map(f => TOOL_FLAG[f] ? '<em class="tvwf tvwf-' + esc(f) + '">' + esc(T(TOOL_FLAG[f])) + '</em>' : '').join('');
+  const fl = (r.flags || []).map(f => TOOL_FLAG[f] ? '<em class="tvwf tvwf-' + esc(f) + '"' + tvwFlagTip(r, f) + '>' + esc(T(TOOL_FLAG[f])) + '</em>' : '').join('');
   const ps = tvwPipes(h), nc = ps ? '"brn tvwnp"' : 'brn';
   return '<tr class="tvwr' + (TOOLF && TOOLF.id === r.id ? ' on' : '') + (r.on ? '' : ' off') + (h ? hnVdCls(h) : '') + '" data-tid="' + esc(r.id) + '" tabindex=0' + (h ? hnVdAttr(h) : '') + '>'
     + '<td class=brd' + (r.proj ? ' title="' + esc(r.proj) + '"' : '') + '>' + esc(sc) + (pj ? ' <span class=tvwj>' + esc(pj) + '</span>' : '') + '</td>'

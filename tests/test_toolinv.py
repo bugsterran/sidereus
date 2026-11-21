@@ -95,6 +95,20 @@ class ToolInvTest(unittest.TestCase):
         self.assertNotIn("unused", by[("skill", "user", "quiet")]["flags"])   # off items are not «unused»
         self.assertEqual(by[("hook", "user", "Stop")]["flags"], [])
 
+    def test_user_agent_shadowed_by_project(self):
+        w = self._w
+        w(os.path.join(self.proj, ".claude", "agents", "r.md"), "---\nname: reviewer\n---\n")   # same frontmatter name, other file name
+        w(os.path.join(self.proj, ".claude", "agents", "solo.md"), "---\nname: solo\n---\n")
+        w(os.path.join(self.proj, ".claude", "sidereus-off", "agents", "parked.md"), "x")    # off project agent shadows nothing
+        by = self._by()
+        u = by[("agent", "user", "reviewer")]
+        self.assertIn("shadow", u["flags"])
+        self.assertEqual(u["shadowBy"], [tv._abbrev(self.proj)])
+        self.assertNotIn("shadow", by[("agent", "project", "reviewer")]["flags"])   # the project row is the one used
+        self.assertNotIn("shadow", by[("agent", "project", "solo")]["flags"])
+        self.assertNotIn("shadow", by[("agent", "user", "parked")]["flags"])        # user row off, and the project one off too
+        self.assertNotIn("shadow", by[("skill", "user", "ship")]["flags"])          # skills: personal wins, not marked
+
     def test_plugin_read_only(self):
         by = self._by()
         self.assertTrue(by[("skill", "plugin", "pl:lint")]["ro"])

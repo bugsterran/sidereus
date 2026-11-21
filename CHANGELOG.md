@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- «Tools»: a user agent that has the same name as a project agent is marked «overridden», with the projects where Claude Code uses the project one in its tooltip.
+
 ### Fixed
 
 - Harness report: an MCP server whose name contains a dot (such as a «claude.ai» connector) now shows its call count instead of 0.

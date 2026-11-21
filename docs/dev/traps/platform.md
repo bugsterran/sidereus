@@ -165,6 +165,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⚠User/project hook entries stay `on=True` — Claude Code has no per-entry off switch; a new plugin item kind must take `on` too.
 - **An agent is keyed by its frontmatter `name`, not its file name** — the Agent tool's `subagent_type` is the frontmatter name, so `rev.md` with `name: reviewer` showed 0 runs in the harness while «Tools» named it «reviewer».
   ⇒ Every agent list goes through `toolinv.agent_name` (frontmatter `name`, else file name); `pipeline._agent_files` keeps the path server-side.
+- **A user agent and a same-name project agent both read «on» in «Tools»** — Claude Code loads one per name, project `.claude/agents` over `~/.claude/agents` (deterministic since Claude Code 2.1.330).
+  ⇒ `_flags` adds `shadow` + `shadowBy` (project paths) to the on user row only when an on project agent has its name; the list shows «overridden» with the projects in its tooltip. Test `test_user_agent_shadowed_by_project`.
+  ⚠Not for skills — their documented order is the reverse (personal over project). Plugin agents are namespaced (`plugin:name`) and never collide.
   ⚠Frontmatter keys are column-0 only (a nested `  name:` is not the agent's); config readers use `ctxsrc.read_text`/`_json_file` (leading BOM dropped) and type-check every value (`disabledMcpjsonServers` string, `env` list, top-level `[]`).
 - **Old code name is not recognised — no fallback** (2026-10, code name renamed to Sidereus everywhere).
   - Cause: the old env vars, `X-*` headers, `python3 -m` module, launchd labels, schtasks task and MCP server/tool names were all renamed; nothing reads the old ones.
