@@ -437,9 +437,12 @@ def _mcp_rows(items, uses, st=None):
     for it in items:
         nm = str(it["name"])[:TI_NAME]
         plug = _plug_name(os.path.dirname(it["file"])) if it["scope"] == "plugin" else ""
-        keys = ["mcp:" + nm] + (["mcp:plugin_%s_%s" % (plug, nm)] if plug else [])   # plugin tools: mcp__plugin_<p>_<s>__<t>
+        # plugin tools: mcp__plugin_<p>_<s>__<t>; tool names carry the sanitized form (`a.b` -> `a_b`), so calls
+        # are counted under it too. ⚠dedupe: _use sums, a name with nothing to sanitize would count twice.
+        keys = list(dict.fromkeys(["mcp:" + nm] + (["mcp:plugin_%s_%s" % (plug, nm)] if plug else [])
+                                  + ["mcp:" + re.sub(r"[^A-Za-z0-9_-]", "_", nm)]))
         n, last = _use(uses, keys)
-        status, err, fail_at, ok_at = _health(st or {}, keys + ["mcp:" + re.sub(r"[^A-Za-z0-9_-]", "_", nm)])
+        status, err, fail_at, ok_at = _health(st or {}, keys)
         rows.append({"name": nm, "scope": it["scope"], "plug": plug, "transport": _transport(it.get("entry")),
                      "on": bool(it["on"]), "n": n, "last": last, "status": status, "err": err, "fail_at": fail_at, "ok_at": ok_at,
                      "tid": it.get("id", "")})   # opaque toolinv id: the Tools list joins harness rows by it

@@ -375,6 +375,11 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ⇒ That case emits `mcpauth:<srv>` instead of `mcp:<srv>`; `session_mcp` turns it into state `auth` (login needed) unless a later call exists; `_mcp_compute` skips non-`mcp:` keys.
 - ⚠Never count an `mcpauth:` key as a connect in `mcp_status` or the Harness `mcp_fail` check.
 
+## Harness MCP row read 0 calls for a server name with a dot (`sidereus/harness.py` `_mcp_rows`)
+- Cause: calls were summed only under `mcp:<config name>`; tool names carry the sanitized form (`claude.ai X` -> `claude_ai_X`), which only the status lookup used.
+- ⇒ Count and status use one deduped key list with the sanitized form, same as `mcp_conn._keys`.
+- ⚠Keep the list deduped: `_use` sums, so a name with nothing to sanitize would count twice. `tests/test_mcp_conn.py` `test_dotted_server_calls_counted_under_tool_name_form`.
+
 ## A `TI_CACHE_V` bump costs one cold rescan (`sidereus/toolidx.py` `TI_CACHE_V`, now 6)
 - Cause: `_load_disk` drops `toolidx-cache.json` when its version differs, so the first start after the bump re-reads 90 days of transcripts (★10-03: 4.64 GB · 3,970 files · 21.6 s).
 - ⇒ The rescan runs once in the background; «Tools»/«Harness»/«Session tools» show scanning until it ends, later starts load the cache.

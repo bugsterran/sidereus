@@ -128,6 +128,15 @@ class McpConnTest(unittest.TestCase):
         for p in ("/c/mk/browser/1.0.0", "/c/mk/browser", "", "/c/mk/9lives/1.2"):
             self.assertEqual(MC._plug_name(p), H._plug_name(p))
 
+    def test_dotted_server_calls_counted_under_tool_name_form(self):
+        # Tool names carry `a.b` as `a_b`; the config name alone matched no use key, so calls read 0.
+        it = {"name": "claude.ai Docs", "scope": "user", "file": "/x/.claude.json", "entry": {"type": "http"}, "on": True}
+        uses = {"mcp:claude_ai_Docs": {"n": 4, "last": 7}}
+        hr = H._mcp_rows([it], uses)[0]
+        self.assertEqual((hr["n"], hr["last"]), (4, 7))
+        plain = dict(it, name="docs")   # nothing to sanitize: one key, not counted twice
+        self.assertEqual(H._mcp_rows([plain], {"mcp:docs": {"n": 2, "last": 1}})[0]["n"], 2)
+
     def test_R2_state_per_session_not_global(self):
         d = NOW - 3600
         self._tx(S1, [_tu("a1", "mcp__docs__q", d - 50), _delta(d, failed=[{"name": "docs", "errorCode": "CONNECTION_CLOSED"}])])
