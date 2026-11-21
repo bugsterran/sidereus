@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Harness report: an MCP server whose name contains a dot (such as a «claude.ai» connector) now shows its call count instead of 0.
+- «Tools» with no project picked says to pick a project in Pipelines to see the stage chips and check results, instead of leaving them out with no reason.
+
 ## [0.22.0] - 2026-11-21
 
 ### Added
