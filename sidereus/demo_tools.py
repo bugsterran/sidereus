@@ -114,7 +114,7 @@ def _demo_harness(a, path):
                      {"name": "browser", "scope": "plugin", "plug": "browser", "transport": "http", "on": True, "n": 0, "last": 0,
                       "status": "fail", "err": "connection refused", "fail_at": t}],
             "skills": [{"name": "release-notes", "scope": "user", "plug": "", "on": True, "n": 14, "last": t, "open": "",
-                        "pipes": [{"pipe": "release", "stage": "노트"}]}],
+                        "pipes": [{"pipe": "release", "stage": "릴리스 노트"}]}],
             "counts": {"skill": 2, "cmd": 1, "mcp": 2},
             "evidence": sorted(_demo_evidence(a) + _demo_ci(a) + _demo_incident_rows(a), key=lambda r: -r["ts"])}
     for k, key in (("mcp", "mcps"), ("skill", "skills")):

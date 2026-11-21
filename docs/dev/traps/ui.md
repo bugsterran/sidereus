@@ -340,3 +340,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ After resolving, a capped window (one MutationObserver, 3 s) focuses the first enabled `sels` twin only while focus is on BODY/null (`test_refocus_twin_after_caller_repaint`).
 - ⚠It ends on any focusin it did not cause, a pointerdown or a new dialog — never steal focus the person moved (`test_refocus_never_steals_and_ends`).
 - ⚠Prompt mode keeps the input focused on presses on title/body text (`ucfPtrKeep`); confirm/alert keep text selectable.
+- **The English demo showed a Korean stage name in a «pipeline · stage» chip** (`sidereus/demo_tools.py`): a demo skill row named a stage «노트», which `PLG_NAMES.en` (06-i18n-w.js) does not map; the real release pipeline's stage is «릴리스 노트».
+  ⇒ Demo rows reuse real pipeline stage titles. Test `tests/test_demo_stage_names_en.py` checks every demo `"stage"` against `PLG_NAMES.en`.
+  ⚠Do not rename demo stage titles to English — the Korean demo then shows English (same reason as the demo pipeline titles).
