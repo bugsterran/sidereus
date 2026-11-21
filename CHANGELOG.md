@@ -5,20 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-
-- «Tools»: a user agent that has the same name as a project agent is marked «overridden», with the projects where Claude Code uses the project one in its tooltip.
-
-### Fixed
-
-- Harness report: an MCP server whose name contains a dot (such as a «claude.ai» connector) now shows its call count instead of 0.
-- «Tools» with no project picked says to pick a project in Pipelines to see the stage chips and check results, instead of leaving them out with no reason.
-
 ## [0.22.0] - 2026-11-21
 
 ### Added
 
 - «Session tools» (Tools tab): pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi (pi through the Sidereus pi extension, including calls made inside `codemode`; an extension installed before this release shows «Partly connected» in Settings › «Diagnostics» and its ok/fail stays unknown until pi «Connect» is run again). A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself. The orbit fills the window height; more servers than fit on a ring spread over a staggered grid around the centre instead of overlapping. The project name in the centre shows in full (a smaller font for long names instead of an ellipsis), and a failed node keeps its error code on one line. Chips «MCP | Skills | Agents | Hooks» switch the orbit to the skills (including slash commands), agents and hook events a Claude Code session can load, each with that session's call or run count (unused items dimmed; never hook commands or output) and a «Task» request only; on Codex, pi and other CLIs those chips show «Not read for this CLI yet».
+- «Tools»: a user agent that has the same name as a project agent is marked «overridden», with the projects where Claude Code uses the project one in its tooltip.
 
 ### Changed
 
@@ -36,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: Delete or Backspace no longer removes the selected canvas stage while another view («Harness report») is showing.
 - In-page dialogs: Esc while an input method is composing ends the composition and keeps a text prompt open with what was typed, as the browser's `prompt()` did; a plain Esc afterwards still cancels.
 - In-page dialogs: closing one by pressing Esc repeatedly while typing with an input method no longer leaves every later dialog refused until a reload; the guided tour no longer takes the dialog's keys; a click outside keeps focus in the text field; a reopened dialog starts at the top. A pipeline apply-mode change confirmed while the list refreshed is written when nothing changed, and says so when it was refused. The mailbox watch «Save» writes once on a double click, a same-for-all «Auto-compact» save no longer flips the pane to «Per account» for a moment, and a long unbroken name no longer runs out of the toast.
+- Harness report: an MCP server whose name contains a dot (such as a «claude.ai» connector) now shows its call count instead of 0.
+- «Tools» with no project picked says to pick a project in Pipelines to see the stage chips and check results, instead of leaving them out with no reason.
 
 ## [0.21.0] - 2026-11-18
 
