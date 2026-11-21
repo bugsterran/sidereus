@@ -172,6 +172,14 @@ class ToolsConfigMap(unittest.TestCase):
             for t in ("hnpc", "tvwmiss", "data-hnvdl", "tvwvdr"):
                 self.assertNotIn(t, h, js)   # unknown harness: plain rows, never «not installed»
 
+    def test_no_project_says_where_to_pick_one(self):
+        note = "파이프라인 탭에서 프로젝트를 고르면"
+        h = self._paint(" PLS.proj = '';")
+        self.assertIn('data-tid="s1"', h)
+        self.assertIn(note, h)   # no project: plain rows plus the reason, not a silent blank
+        for js in ("", " HN.plat = 'cx';", " PLS.proj = ''; var FEATS = {harness: false};"):
+            self.assertNotIn(note, self._paint(js), js)   # project picked / other CLI / feature off: no note
+
     def test_r3_flagged_mcp_row_in_list(self):
         h = self._paint(" D.mcps = [{name: 'm1', scope: 'user', tid: 'm1', status: 'fail', vd: {lvl: 'bad', why: 'mcp_fail', vp: {name: 'm1'}, id: 'v3'}},"
                         " {name: 'lost', scope: 'user', tid: 'mx', vd: {lvl: 'check', why: 'mcp_fail', vp: {}, id: 'v4'}}, {name: 'fine', scope: 'user', tid: 'my'}];"

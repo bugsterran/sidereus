@@ -33,6 +33,11 @@ function tvwHn(items){
   }));
   return { by, miss, vd: d.verdict };
 }
+// The only reason tvwHn is null that the person can act on: the project comes from the Pipelines tab, this tab has no picker.
+function tvwNoProj(){
+  return typeof HN !== 'undefined' && typeof PLS !== 'undefined' && HN.plat === 'cc' && !PLS.proj
+    && !(typeof FEATS !== 'undefined' && FEATS.harness === false);
+}
 // Stage chips in the Name cell, check result in a full-width row below (the Flags cell is too narrow for «Next step»).
 function tvwPipes(h){ return h && Array.isArray(h.pipes) && h.pipes.length ? ' ' + h.pipes.map(hnPipeChip).join('') : ''; }
 function tvwVdRow(h){ return h && hnVd(h) ? '<tr class=tvwvdr><td colspan=7>' + hnVdRow(h) + '</td></tr>' : ''; }
@@ -79,7 +84,7 @@ function paintTools(box){
   else if(!TOOLS.ok) body = '<div class=hidnote>' + esc(T('Could not read the tool list')) + (TOOLS.msg ? ' — ' + esc(TOOLS.msg) : '') + '</div>';
   else {
     const items = TOOLS.items || [], hn = tvwHn(items);
-    body = (hn ? hnVdLine(hn.vd) : '')   // check line here too, so stepping continues in this list
+    body = (hn ? hnVdLine(hn.vd) : tvwNoProj() ? '<div class=hidnote>' + esc(T('Pick a project in Pipelines to see stage chips and check results here')) + '</div>' : '')   // check line here too, so stepping continues in this list
       + (TOOLS.scanning ? '<div class=hidnote>' + esc(T('Counting uses…')) + '</div>' : '')
       + '<div class=hidnote>' + esc(T('≈Tokens are estimated from file size · click a row to view its content')) + '</div>'
       + TOOL_KINDS.map(([k, en]) => {
