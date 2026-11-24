@@ -53,8 +53,9 @@ function tvwRow(r, h){
   const ps = tvwPipes(h), nc = ps ? '"brn tvwnp"' : 'brn';
   return '<tr class="tvwr' + (TOOLF && TOOLF.id === r.id ? ' on' : '') + (r.on ? '' : ' off') + (h ? hnVdCls(h) : '') + '" data-tid="' + esc(r.id) + '" tabindex=0' + (h ? hnVdAttr(h) : '') + '>'
     + '<td class=brd' + (r.proj ? ' title="' + esc(r.proj) + '"' : '') + '>' + esc(sc) + (pj ? ' <span class=tvwj>' + esc(pj) + '</span>' : '') + '</td>'
-    // Plugin rows drop the «plugin:» prefix (the scope column says plugin); full name stays in the tooltip
-    + (r.scope === 'plugin' && String(r.name).includes(':') ? '<td class=' + nc + ' title="' + esc(r.name) + '">' + esc(String(r.name).slice(String(r.name).indexOf(':') + 1)) : '<td class=' + nc + '>' + esc(r.name)) + (r.ro ? ' <s>' + esc(T('read-only')) + '</s>' : '') + ps + '</td>'
+    // Plugin rows drop the «plugin:» prefix (the scope column says plugin); ⚠the cell is nowrap+ellipsis, so every row's title carries the full name + read-only mark
+    + '<td class=' + nc + ' title="' + esc(String(r.name) + (r.ro ? ' · ' + T('read-only') : '')) + '">'
+    + esc(r.scope === 'plugin' && String(r.name).includes(':') ? String(r.name).slice(String(r.name).indexOf(':') + 1) : r.name) + (r.ro ? ' <s>' + esc(T('read-only')) + '</s>' : '') + ps + '</td>'
     + '<td class="brd tvwp" title="' + esc(r.path) + '">' + esc(r.path) + '</td>'
     + '<td class=brv>' + fmtTok(r.tok || 0) + '</td>'
     + '<td class=brv' + (r.last ? ' title="' + esc(stamp(r.last)) + '"' : '') + '>' + (r.uses ? r.uses : '—') + '</td>'
@@ -66,7 +67,7 @@ function tvwMiss(x){
   const sc = TOOL_SCOPE[x.scope] ? T(TOOL_SCOPE[x.scope]) : String(x.scope || '');
   const ps = tvwPipes(x);
   return '<tr class="tvwr tvwmiss' + hnVdCls(x) + '"' + hnVdAttr(x) + '><td class=brd>' + esc(sc) + '</td>'
-    + '<td class=' + (ps ? '"brn tvwnp"' : 'brn') + '>' + esc(x.name) + ps + '</td>'
+    + '<td class=' + (ps ? '"brn tvwnp"' : 'brn') + ' title="' + esc(x.name) + '">' + esc(x.name) + ps + '</td>'
     + '<td class="brd tvwp">' + (x.tid ? '' : esc(T('not installed'))) + '</td><td class=brv></td>'
     + '<td class=brv' + (x.last ? ' title="' + esc(stamp(x.last)) + '"' : '') + '>' + (x.n == null ? '' : x.n ? esc(x.n) : '—') + '</td>'   // null = not counted (unknown)
     + '<td class=tvwfs></td><td class="brd tvwo"></td></tr>' + tvwVdRow(x);
@@ -111,22 +112,32 @@ function paintTools(box){
   box._tvw = h;
   box.innerHTML = h;
 }
+// ⚠tlPaint replaces the list's innerHTML, so a focused row or Close button dropped focus to <body>; put it back on row `id`.
+function tvwRepaint(id){
+  const fe = document.activeElement, had = !!(fe && fe.closest && fe.closest('.tvw'));
+  tlPaint();
+  if(!had || fe.isConnected) return;   // focus was elsewhere, or the list was not rebuilt
+  const r = Array.from(document.querySelectorAll('.tvwr[data-tid]')).find(x => x.dataset.tid === id);
+  if(r) r.focus();
+}
 async function tvwOpen(id){
-  if(TOOLF && TOOLF.id === id){ TOOLF = null; tlPaint(); return; }
+  if(TOOLF && TOOLF.id === id){ TOOLF = null; tvwRepaint(id); return; }
   const r = ((TOOLS && TOOLS.items) || []).find(x => x.id === id);
   if(!r) return;
   TOOLF = { id, name: r.name, path: r.path, text: null };
-  tlPaint();
+  tvwRepaint(id);
   let v;
   try{ v = await getJSON('/api/tools/file?id=' + encodeURIComponent(id)); }
   catch(e){ v = { ok: false, msg: e && e.status === 404 ? T('No such item.') : fetchErrMsg(e) }; }
   if(!TOOLF || TOOLF.id !== id) return;
   if(v && v.ok) TOOLF.text = String(v.text || ''); else TOOLF.err = (v && v.msg) || T('Could not read');
-  tlPaint();
+  tvwRepaint(id);
 }
+// Close returns focus to the row that was open (the button is gone after the repaint).
+function tvwClose(){ const id = TOOLF && TOOLF.id; TOOLF = null; tvwRepaint(id); }
 document.addEventListener('click', e => {
   if(!e.target.closest) return;
-  if(e.target.closest('[data-tvwx]')){ TOOLF = null; tlPaint(); return; }
+  if(e.target.closest('[data-tvwx]')){ tvwClose(); return; }
   const r = e.target.closest('.tvwr[data-tid]');
   if(r) tvwOpen(r.dataset.tid);
 });

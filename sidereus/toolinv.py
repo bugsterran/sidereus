@@ -15,6 +15,7 @@ from sidereus import ctxsrc
 from sidereus.redact import redact
 from sidereus.work import _allowed_cwds
 from sidereus.toolidx import tool_uses
+from sidereus.toolidx_fmt import _SRV_RE
 
 KINDS = ("skill", "agent", "cmd", "mcp", "hook")
 MASK = "••••"
@@ -213,12 +214,21 @@ def _md_items(base, scope, proj, overrides, prefix="", ro=False, plug_on=True):
     return out
 
 
-def _mcp_items(file, key, servers, scope, proj, disabled=(), ro=False, on=True):
+def mcp_keys(nm, plug=""):
+    """toolidx keys of one configured server: config name, plugin form, sanitized tool-name form (`a.b` -> `a_b`).
+    ⚠Deduped: scan_items sums every key, so a name with nothing to sanitize would count twice. Same forms as
+    mcp_conn._keys and harness._mcp_rows (tests compare them)."""
+    ks = ["mcp:" + nm] + (["mcp:plugin_%s_%s" % (plug, nm)] if plug else []) + ["mcp:" + _SRV_RE.sub("_", nm)]
+    return list(dict.fromkeys(ks))
+
+
+def _mcp_items(file, key, servers, scope, proj, disabled=(), ro=False, on=True, plug=""):
     out = []
     for n in sorted(servers if isinstance(servers, dict) else {}):
+        ks = mcp_keys(str(n), plug)
         out.append(dict(kind="mcp", scope=scope, proj=proj, name=str(n), path=file, file=file,
                         key=list(key) + [n], on=on and n not in disabled, ro=ro, entry=servers[n],
-                        ukey="mcp:" + str(n)))
+                        ukey=ks[0], ukeys=ks[1:]))
     return out
 
 
@@ -284,7 +294,7 @@ def _raw_items():
     for label, d, on in _plugins(us):
         items += _md_items(d, "plugin", "", {}, prefix=label + ":", ro=True, plug_on=on)
         mj = os.path.join(d, ".mcp.json")
-        items += _mcp_items(mj, ["mcpServers"], _read_json(mj).get("mcpServers"), "plugin", "", ro=True, on=on)
+        items += _mcp_items(mj, ["mcpServers"], _read_json(mj).get("mcpServers"), "plugin", "", ro=True, on=on, plug=label)
         hj = os.path.join(d, "hooks", "hooks.json")
         items += _hook_items(hj, _read_json(hj).get("hooks"), "plugin", "", ro=True, on=on)
     out, seen = [], set()

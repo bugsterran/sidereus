@@ -67,7 +67,8 @@ class MainViewHash(unittest.TestCase):
     def test_r4_stored_tokens_tools_lands_on_tools(self):
         self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools"}, full=True),
                          ["tools", "tools", [["mbMainView", "tools"]]])
-        self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "conn"}, full=True), ["tools", "conn", [["mbMainView", "tools"]]])
+        # a typed hash wins: the old sub-view still migrates (mvToolsMoved) but the tab is the hash's
+        self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "conn"}, full=True), ["token", "conn", []])
 
     def test_r4_tokens_redirect_with_pipelines_off(self):
         self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools", "mbTabsOff": '["pipe"]'}, full=True),
@@ -76,8 +77,7 @@ class MainViewHash(unittest.TestCase):
     def test_r4_stored_pipelines_tool_view_lands_on_tools(self):
         self.assertEqual(boot("", ui={"mbMainView": "pipe", "sidereus.plview": "conn"}, full=True),
                          ["tools", "conn", [["mbMainView", "tools"]]])
-        self.assertEqual(boot("#pipelines", ui={"sidereus.plview": "tools"}, full=True),
-                         ["tools", "tools", [["mbMainView", "tools"]]])
+        self.assertEqual(boot("#pipelines", ui={"sidereus.plview": "tools"}, full=True), ["pipe", "tools", []])
         self.assertEqual(boot("", own={"mbMainView": "pipe"}, ui={"sidereus.plview": "conn"}, full=True),
                          ["tools", "conn", [["mbMainView", "tools"]]])
 
@@ -87,9 +87,9 @@ class MainViewHash(unittest.TestCase):
         tl = re.search(r"^const TLVIEWS = .*?^\}\)\(\);", src["47a-tools-tab.js"], re.S | re.M).group(0)
         pl = re.search(r"^const PLVIEWS = .*?^\}\)\(\);", src["48-pipeline.js"], re.S | re.M).group(0)
         iife = re.search(r"^let mainView = \(\(\) => \{.*?\}\)\(\);", js_all(), re.S | re.M).group(0)
-        for hash_, ui, want in (("#pipelines", {"sidereus.plview": "tools"}, "tools"),
-                                ("", {"mbMainView": "pipe", "sidereus.plview": "conn"}, "conn"),
-                                ("", {"mbMainView": "token", "sidereus.tkview": "conn", "mbTabsOff": '["pipe"]'}, "conn")):
+        for hash_, ui, tab, want in (("#pipelines", {"sidereus.plview": "tools"}, "pipe", "tools"),
+                                     ("", {"mbMainView": "pipe", "sidereus.plview": "conn"}, "tools", "conn"),
+                                     ("", {"mbMainView": "token", "sidereus.tkview": "conn", "mbTabsOff": '["pipe"]'}, "tools", "conn")):
             body = ("const location = {hash: %s}, UIS = %s, SETS = [];\n" % (json.dumps(hash_), json.dumps(ui))
                     + "const ISPOP = false, ISWP = false, ISBP = false;\nlet mvToolsMoved = '';\n"
                     + "function tabOwn(k){ return null; } function tabSet(k, v){ SETS.push([k, v]); return true; }\n"
@@ -97,7 +97,12 @@ class MainViewHash(unittest.TestCase):
                     + iife + "\n" + tl + "\n" + pl + "\n"
                     + "process.stdout.write(JSON.stringify([mainView, TLVIEW, PLVIEW, UIS['sidereus.plview'] || null]));")
             plv = "pipe" if "sidereus.plview" in ui else None
-            self.assertEqual(run(body), ["tools", want, "pipe", plv], (hash_, ui))
+            self.assertEqual(run(body), [tab, want, "pipe", plv], (hash_, ui))
+
+    def test_typed_hash_beats_old_tool_view_redirect(self):
+        """/#pipelines with an old plview 'conn' opens Pipelines; no mbMainView write, the sub-view still reaches 47a."""
+        self.assertEqual(boot("#pipelines", ui={"sidereus.plview": "conn"}), "pipe")
+        self.assertEqual(boot("#pipelines", ui={"mbMainView": "time", "sidereus.plview": "conn"}, full=True), ["pipe", "conn", []])
 
     def test_r4_usage_and_other_tabs_unchanged(self):
         self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "use"}, full=True), ["token", "", []])

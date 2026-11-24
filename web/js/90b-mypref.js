@@ -1,7 +1,8 @@
 // «Preferences» settings category (90-settings.js cfgPaneMe): screen prefs in UIS, server prefs via /api/prefs.
 // ⚠Empty storage must reproduce the stock screen byte for byte: every normaliser returns the built-in default for missing/bad input.
 const MP_TABS = ['pipe', 'time', 'struct', 'tools', 'br', 'token', 'hist', 'retro', 'chat'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
-// ⚠New tabs go last: the shortcut digit is the rail position, so a tab inserted earlier would renumber every tab after it.
+// ⚠'tools' sits at index 3, right below Structure (both read a repo's setup); the shortcut digit is the rail position,
+// so any new tab is appended after 'chat' — inserting one earlier would renumber every tab after it.
 function mpJson(k){ try{ return JSON.parse(UIS.getItem(k) || 'null'); }catch(e){ return null; } }
 function mpPut(k, v){ try{ if(v == null) UIS.removeItem(k); else UIS.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); return true; }catch(e){ return false; } }
 // mbStartView: 'last' (default = reopen the last tab) or one tab key.

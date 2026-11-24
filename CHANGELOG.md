@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Tools list: a name cut short by the column width now shows in full (with «read-only» where it applies) as a tooltip on every row, not only on plugin rows.
+- Tools list: opening or closing a file view with the keyboard keeps focus on that row instead of dropping it to the page; the 30-second refresh no longer stops while a row has focus.
+- Tools list: MCP servers whose name holds a dot or a space (`a.b`, `claude.ai Demo`) and plugin MCP servers count their calls instead of showing 0 and «unused».
+- A typed `#pipelines` or `#tokens` address opens that tab even when an older saved view would have moved it to the Tools tab.
+- Harness report: «Go to the next one» no longer scrolls the target row under the sticky header, and the Config map project label sits next to its title instead of mid-row.
+
 ## [0.22.0] - 2026-11-21
 
 ### Added

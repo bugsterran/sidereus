@@ -218,6 +218,24 @@ class ToolInvTest(unittest.TestCase):
         self.assertEqual(loc["key"], ["projects", self.proj, "mcpServers", "loc"])
         self.assertIsNone(tv.item_by_id("nope"))
 
+    def test_mcp_uses_under_sanitized_and_plugin_keys(self):
+        # tool names carry `claude.ai Demo` as `claude_ai_Demo`; a plain name must not be summed twice
+        self._w(self.cj, json.dumps({"mcpServers": {"docs": {}, "claude.ai Demo": {}, "a.b": {}}}))
+        tv.tool_uses = lambda days: {"mcp:docs": {"n": 2, "last": 50}, "mcp:claude_ai_Demo": {"n": 3, "last": 70},
+                                     "mcp:a_b": {"n": 1, "last": 10}, "mcp:plugin_pl_pw": {"n": 5, "last": 90}}
+        by = self._by()
+        self.assertEqual((by[("mcp", "user", "claude.ai Demo")]["uses"], by[("mcp", "user", "claude.ai Demo")]["last"]), (3, 70))
+        self.assertEqual(by[("mcp", "user", "a.b")]["uses"], 1)
+        self.assertEqual(by[("mcp", "user", "docs")]["uses"], 2)
+        self.assertEqual(by[("mcp", "plugin", "pw")]["uses"], 5)
+        self.assertNotIn("unused", by[("mcp", "user", "claude.ai Demo")].get("flags", []))
+
+    def test_mcp_keys_match_mcp_conn(self):
+        mc = sidereus("mcp_conn")
+        for nm, plug in (("docs", ""), ("claude.ai Demo", ""), ("a.b", "pl"), ("pw", "pl")):
+            self.assertEqual(tv.mcp_keys(nm, plug), mc._keys(nm, plug))
+        self.assertEqual(tv.mcp_keys("docs"), ["mcp:docs"])
+
     def test_demo_tools(self):
         demo = sidereus("demo")
         w = demo.World(page_build="x")

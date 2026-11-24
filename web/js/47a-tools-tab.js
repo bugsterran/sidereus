@@ -32,7 +32,13 @@ function tlPaint(fromPoll){
   tbSlot('tools', tlViewSeg());   // the switch lives in the header toolbar slot, never in the body
   if(TLVIEW === 'conn'){ paintMcpConn(box); return; }
   const fe = document.activeElement;   // ⚠poll rebuilds keep keyboard focus and an open title tooltip in the tool lists; this is the one guard (47b hnRepaint calls tlPaint(poll) for it)
-  if(fromPoll === true && ((fe && fe.closest && fe.closest('.tvw')) || (document.querySelector && document.querySelector('.tvw [title]:hover')))) return;
+  if(fromPoll === true && document.querySelector && document.querySelector('.tvw [title]:hover')) return;
+  // A focused row (kept by tvwRepaint after open/close, also after a mouse click) is repainted with its focus put back;
+  // skipping here would freeze the list until focus leaves it. Any other focused control still skips the poll.
+  if(fromPoll === true && fe && fe.closest && fe.closest('.tvw')){
+    if(fe.matches && fe.matches('.tvwr[data-tid]')){ tvwRepaint(fe.dataset.tid); return; }
+    return;
+  }
   paintTools(box);
 }
 // State-poll repaint (95 poll), as 48b plPoll did for these views while they lived on the Pipelines tab.

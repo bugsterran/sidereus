@@ -135,7 +135,7 @@ class ToolsConfigMap(unittest.TestCase):
                         " {name: 'gone<x>', scope: '', tid: '', n: 0, pipes: [{pipe: 'p', stage: 't'}],"
                         "  vd: {lvl: 'bad', why: 'ref_missing', vp: {pipe: 'p', stage: 't'}, id: 'v7'}}];")
         row = h.split('data-tid="s1"', 1)[1].split("</tr>", 1)[0]
-        self.assertIn('<td class="brn tvwnp">sk <span class=hnpc title="p / s">p · s</span></td>', row)
+        self.assertIn('<td class="brn tvwnp" title="sk">sk <span class=hnpc title="p / s">p · s</span></td>', row)
         miss = h.split('<tr class="tvwr tvwmiss hnvd hnvd-bad"', 1)[1].split("</tr>", 1)[0]
         self.assertNotIn("data-tid", miss)   # not installed: shown, never clickable
         self.assertNotIn("tabindex", miss)

@@ -200,7 +200,7 @@ function TN(s){
 }
 // Pipelines-first: nothing saved / invalid / old 'work' (now a modal) lands on Pipelines; Timeline only if pipe was feature-off.
 // ⚠mbTabsOff = tabs whose feature was off at the last poll (92 buildMv); without it a remembered tab calls its 404 route.
-// mvToolsMoved = 'tools'|'conn' when an old Tokens or Pipelines › Tools/Connections state was redirected to the Tools tab
+// mvToolsMoved = 'tools'|'conn' when an old Tokens or Pipelines › Tools/Connections state was found (tab redirected to Tools unless a URL hash picked one)
 // (read by 47a TLVIEW; 46 then deletes the Tokens key, 48 rewrites the Pipelines key to 'pipe').
 let mvToolsMoved = '';
 let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok = v => !(Array.isArray(off) && off.includes(v)) && (v === 'chat' || v === 'time'
@@ -215,8 +215,10 @@ let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok 
                               // ⚠'fail' (tab removed 2026-09-23, now alerts) is not listed -> default tab.
                               const r = ok(v) ? v : ok('pipe') ? 'pipe' : 'time', tk = UIS['sidereus.tkview'], pv = UIS['sidereus.plview'];   // ⚠property access: tests stub UIS as a plain object
                               const mv = r === 'token' ? tk : r === 'pipe' ? pv : '';
+                              // ⚠A typed hash still wins: the old sub-view only migrates to 47a TLVIEW, the tab stays the hash's.
                               if((mv === 'tools' || mv === 'conn') && ok('tools')){
-                                mvToolsMoved = mv; if(typeof tabSet === 'function') tabSet('mbMainView', 'tools'); return 'tools'; }
+                                mvToolsMoved = mv; if(ok(h)) return r;
+                                if(typeof tabSet === 'function') tabSet('mbMainView', 'tools'); return 'tools'; }
                               return r; }
                         catch(e){ return 'pipe'; } })();
 if(document.documentElement) document.documentElement.dataset.mv = mainView;   // same hook setMainView keeps current (75-structure.css)

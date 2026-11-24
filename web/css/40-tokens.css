@@ -114,6 +114,8 @@ body:not(.wkside) .lside > .wku{display:none}
 .brh2{display:flex;gap:8px;align-items:baseline;margin:16px 0 6px;font-size:12px;color:#c3ccda;
   font-weight:600;border-top:1px solid #1a212b;padding-top:12px}
 .brh2 i{margin-left:auto;font-weight:400}
+/* Config map project label sits next to the title; only the trailing verdict <i> is pushed right. */
+.brh2 i.hncfgp{margin-left:0}
 .brsum{font-size:11.5px;color:#8b95a7;margin-bottom:9px}
 .brsum b{color:#eaf1fa}
 .brt{width:100%;border-collapse:collapse;font-size:11.5px}

@@ -117,7 +117,13 @@ function hnVdStep(lvl){
   w.querySelectorAll('.hnvdon').forEach(e => e.classList.remove('hnvdon'));
   el.classList.add('hnvdon');
   if(typeof mvScrollStop === 'function') mvScrollStop();   // ⚠after a tab hand-off, 92 mvScrollBack keeps restoring the tab's saved scrollTop and would undo this jump
+  if(el.style) el.style.scrollMarginTop = (hnVdHeadH(w) + 6) + 'px';   // ⚠the view's sticky .wvh header (top:0) sits inside the scrollport: without this margin nearest parks the row under it
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });   // ⚠nearest: never re-centre the page
+}
+// Height of the sticky caption (.brep > .wvh) above the stepped rows; 0 when the view has none.
+function hnVdHeadH(w){
+  const b = w && w.closest ? w.closest('.brep') : null, h = b && b.querySelector ? b.querySelector(':scope > .wvh') : null;
+  return h ? Math.ceil(h.offsetHeight || 0) : 0;
 }
 function hnChip(h, showEv){
   const ef = HN_EFF[h.eff] ? h.eff : 'unknown', sc = hnSc(h.scope);
