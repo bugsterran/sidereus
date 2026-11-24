@@ -4,6 +4,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Mailbox and chat
 
+- **One non-UTF-8 byte made acks.jsonl / bus.jsonl unreadable on every poll** (`bus._read_tail`). Cause: a decode error became the read error, so nothing was cached and `ack_map` returned `AckMapError` each call — every receipt vanished until the file was edited by hand. A torn multibyte append (`ensure_ascii=False` notes) can leave such a line.
+  - ⇒ Decode with `"replace"` and let the fold skip or count the line like any malformed record. Test `test_non_utf8_line_is_one_bad_record_not_a_dead_file`.
+  - ⚠Do not turn a per-line decode error back into a whole-file error.
 - **A post appended late was never polled** (`bus.messages(since)`). Cause: writers stamp `t` before their O_APPEND, so with several writer processes an earlier-stamped post can land after a poll moved `since` past a later one.
   - ⇒ A poll (`since > 0`) re-serves `MSG_SLACK_NS` (5 s); the page dedups by id (`95-poll.js` MSEEN). `messages_range` passes slack 0. Test `BusSlack`.
   - ⚠Do not drop the client id dedup or widen the slack — every poll re-sends the bodies inside it.

@@ -380,7 +380,7 @@ function refreshAgent(){
   const want = ++agSeq;
   agBusyUrl = url;
   const done = () => { if(want === agSeq) agBusyUrl = ''; };
-  getJSON(url)
+  getJSON(url, {timeout: 15000})                         // ⚠the busy guard skips ticks until this settles: the 120 s default froze the log
     .then(j=>{
       done();
       if(want !== agSeq) return;                         // an older reply landing late never paints over a newer one

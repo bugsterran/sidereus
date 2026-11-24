@@ -183,6 +183,23 @@ class BusIncremental(unittest.TestCase):
         self.assertEqual(bus._cached(self.bus_path, bus._bus_parse), self._fresh(self.bus_path, bus._bus_parse))
         self.assertEqual(bus.ack_map()["m1"], {"delivered": ["bob"], "ack": [{"who": "amy", "note": "ok"}]})
 
+    def test_non_utf8_line_is_one_bad_record_not_a_dead_file(self):
+        good = json.dumps({"id": "m1", "who": "bob", "t": NOW - 1}) + "\n"
+        ack = json.dumps({"id": "m1", "who": "amy", "kind": "ack", "note": "ok", "t": NOW - 1}) + "\n"
+        self.raw(self.acks_path, good, "w")
+        self.raw(self.bus_path, json.dumps({"id": "a", "t": 10}) + "\n", "w")
+        with open(self.acks_path, "ab") as f:
+            f.write(b'{"id": "m1", "who": "x\xe2\x80"\n')            # torn multibyte write
+        with open(self.bus_path, "ab") as f:
+            f.write(b'{"id": "b", "t": 20, "body": "\xff"}\n')       # valid JSON around a bad byte
+            f.write(b'{"id": "c", "t": \xe2\n')                       # torn
+        self.raw(self.acks_path, ack)
+        self.raw(self.bus_path, json.dumps({"id": "d", "t": 30}) + "\n")
+        self.assertEqual(bus.ack_map()["m1"], {"delivered": ["bob"], "ack": [{"who": "amy", "note": "ok"}]})
+        self.assertEqual([m["id"] for m in bus.messages(0)], ["a", "b", "d"])
+        self.assertEqual(bus._cached(self.bus_path, bus._bus_parse)[1], 1)          # the torn line is counted
+        self.assertIn(self.acks_path, bus._parse_cache)                              # cached, not re-read every poll
+
     def test_truncation_and_rewrite_fall_back_to_full(self):
         self.raw(self.bus_path, "".join(json.dumps({"id": "m%d" % i, "t": i}) + "\n" for i in range(1, 6)), "w")
         self.assertEqual(len(bus.messages(0)), 5)

@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A typed `#pipelines` or `#tokens` address opens that tab even when an older saved view would have moved it to the Tools tab.
 - Harness report: «Go to the next one» no longer scrolls the target row under the sticky header, and the Config map project label sits next to its title instead of mid-row.
 - Messages sent from the viewer at the same moment (for example to several sessions at once) are written in time order, so a session's mail hook no longer skips one that landed a few milliseconds late.
+- A single broken character in the mailbox receipt or message file no longer hides every delivered/read mark (or the whole chat); only that line is skipped.
+- An open work log whose refresh request hangs catches up within 15 seconds instead of staying frozen for up to two minutes.
 
 ## [0.22.0] - 2026-11-21
 

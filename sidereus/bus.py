@@ -135,9 +135,11 @@ def _file_key(path):
 
 
 def _read_tail(path, off, sig):
-    """(lines, end offset, end sig, err) for the complete lines after byte `off`; None when the `sig` bytes before it changed.
+    """(lines, end offset, end sig) for the complete lines after byte `off`; None when the `sig` bytes before it changed.
     ⚠Consumes only up to the last newline: a writer mid-append leaves a partial line that is read again next time,
-      never parsed half and never counted twice."""
+      never parsed half and never counted twice.
+    ⚠A line with bytes that are not UTF-8 (torn multibyte write) is decoded with U+FFFD and left to the fold, which
+      skips or counts it like any malformed record. Raising here made the whole file unreadable on every call."""
     with open(path, "rb") as f:
         f.seek(off - len(sig))
         data = f.read()
@@ -145,16 +147,12 @@ def _read_tail(path, off, sig):
         return None
     data = data[len(sig):]
     cut = data.rfind(b"\n") + 1
-    lines, err = [], None
+    lines = []
     for raw in data[:cut].split(b"\n"):
-        try:
-            line = raw.decode("utf-8").strip()
-        except UnicodeDecodeError as e:
-            err = e                  # ⚠keep the lines read so far (the value is not cached with an error)
-            break
+        line = raw.decode("utf-8", "replace").strip()
         if line:
             lines.append(line)
-    return lines, off + cut, (sig + data[:cut])[-_TAIL_SIG:], err
+    return lines, off + cut, (sig + data[:cut])[-_TAIL_SIG:]
 
 
 def _cached(path, fold):
@@ -182,11 +180,10 @@ def _cached(path, fold):
         return fold(None, [], None)  # removed between stat and open: empty, the next call stats again
     except OSError as e:
         return fold(None, [], e)
-    lines, end, sig, err = got
-    val = fold(base[3] if base else None, lines, err)
-    if err is None:
-        with _parse_lock:
-            _parse_cache[path] = (key, end, sig, val)
+    lines, end, sig = got
+    val = fold(base[3] if base else None, lines, None)
+    with _parse_lock:
+        _parse_cache[path] = (key, end, sig, val)
     return val
 
 
