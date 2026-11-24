@@ -232,30 +232,50 @@ def mark_ack(msg_ids, who, kind="ack", note=None):
         return 0
 
 
+def ack_fold(out, lines, own=None):
+    """Fold raw acks.jsonl lines into `out` (id → entry) in place and return it — the one ack merge rule
+    (acks() here and the viewer's incremental cache in sidereus/bus.py both call it).
+
+    A malformed record (bad JSON, not a dict, non-int `t`, unhashable id) is skipped, never a stop.
+    ⚠`own` = set of ids whose entries `out` owns: any other existing entry is shared with a cached map that readers
+      iterate outside a lock, so it is copied (lists too) before the first change. None = `out` owns everything."""
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+            mid, t, kind, who = r.get("id"), int(r.get("t") or 0), r.get("kind"), r.get("who")
+            hash(mid)
+        except Exception:
+            continue
+        e = out.get(mid)
+        if e is None:
+            e = out[mid] = {"delivered": [], "ack": [], "t": 0}
+            if own is not None:
+                own.add(mid)
+        elif own is not None and mid not in own:
+            e = out[mid] = {k: (list(v) if isinstance(v, list) else v) for k, v in e.items()}
+            own.add(mid)
+        # ★**last record time** for the id — the viewer uses it to keep only recent ones (delivered has no time)
+        e["t"] = max(e.get("t") or 0, t)
+        if kind == "ack":
+            e["ack"].append({"who": who, "at": r.get("t"), "note": r.get("note")})
+        else:
+            if who not in e["delivered"]:
+                e["delivered"].append(who)
+            # Stop-hook receipt kept apart too: «delivered» also covers a watcher that only notified
+            if kind == "hooked" and who not in e.setdefault("hooked", []):
+                e["hooked"].append(who)
+    return out
+
+
 def acks():
     """message id → {"delivered": [who…], "ack": [{who, at, note}…], "t": last record (ns)}"""
     out = {}
     try:
         with open(ACKS, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    r = json.loads(line)
-                except Exception:
-                    continue
-                e = out.setdefault(r.get("id"), {"delivered": [], "ack": [], "t": 0})
-                # ★**last record time** for the id — the viewer uses it to keep only recent ones (delivered has no time)
-                e["t"] = max(e.get("t") or 0, int(r.get("t") or 0))
-                if r.get("kind") == "ack":
-                    e["ack"].append({"who": r.get("who"), "at": r.get("t"), "note": r.get("note")})
-                else:
-                    if r.get("who") not in e["delivered"]:
-                        e["delivered"].append(r.get("who"))
-                    # Stop-hook receipt kept apart too: «delivered» also covers a watcher that only notified
-                    if r.get("kind") == "hooked" and r.get("who") not in e.setdefault("hooked", []):
-                        e["hooked"].append(r.get("who"))
+            ack_fold(out, f)
     except FileNotFoundError:
         pass
     except Exception:

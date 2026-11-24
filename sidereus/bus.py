@@ -312,34 +312,14 @@ def ack_map(cut=None):
 
 
 def _ack_fold(base, lines, err):
-    """Incremental twin of mailbox_core.acks(): (id -> {delivered, ack, t[, hooked]}, read error).
-    ⚠Same merge as mailbox_core.acks — test_bus_cache compares the two on one file; change both together.
-      A malformed record is skipped (mailbox_core stops at it). Entries are copied before a change (base is shared)."""
+    """Incremental fold for the parse cache: (id -> {delivered, ack, t[, hooked]}, read error).
+    The merge rule is mailbox_core.ack_fold (also behind mailbox_core.acks); `own=set()` makes it copy a cached
+    entry before changing it, since `base` is shared with readers."""
+    if CODE_DIR not in sys.path:    # ⚠same lazy import as _ack_slim: mailbox_core lives in CODE_DIR
+        sys.path.insert(0, CODE_DIR)
+    import mailbox_core
     out = dict(base[0]) if base else {}
-    own = set()
-    for line in lines:
-        try:
-            r = json.loads(line)
-            mid, t, kind, who = r.get("id"), int(r.get("t") or 0), r.get("kind"), r.get("who")
-            hash(mid)
-        except Exception:
-            continue
-        e = out.get(mid)
-        if e is None:
-            e = out[mid] = {"delivered": [], "ack": [], "t": 0}
-            own.add(mid)
-        elif mid not in own:
-            e = out[mid] = {k: (list(v) if isinstance(v, list) else v) for k, v in e.items()}
-            own.add(mid)
-        e["t"] = max(e.get("t") or 0, t)
-        if kind == "ack":
-            e["ack"].append({"who": who, "at": r.get("t"), "note": r.get("note")})
-        else:
-            if who not in e["delivered"]:
-                e["delivered"].append(who)
-            if kind == "hooked" and who not in e.setdefault("hooked", []):
-                e["hooked"].append(who)
-    return out, err
+    return mailbox_core.ack_fold(out, lines, set()), err
 
 
 def _ack_slim(cut):

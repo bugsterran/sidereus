@@ -9,7 +9,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Do not drop the client id dedup or widen the slack — every poll re-sends the bodies inside it.
 - **bus.jsonl / acks.jsonl re-parsed in full on every append** (★bus 3.9 MB = 15.6 ms, acks 1.46 MB = 18.8 ms). ⇒ `bus._cached` folds only complete lines after the cached offset (same inode, larger size, unchanged 64 bytes before it); else a full parse.
   - ⚠Consume only up to the last newline (a writer mid-append) and never mutate a cached value in place (readers iterate it unlocked).
-  - ⚠`bus._ack_fold` mirrors `mailbox_core.acks`; change both together (`test_ack_fold_matches_mailbox_core_and_keeps_old_value`).
+  - ⚠The ack merge rule lives only in `mailbox_core.ack_fold` (`acks()` and `bus._ack_fold` call it; `own=set()` copies a cached entry before changing it). A malformed record is skipped, never a stop (`test_ack_fold_matches_mailbox_core_and_keeps_old_value`).
 - **`acks` is sent only when its version changed** (`acksV` = `<mtime_ns>-<size>-<cut>` of `acks.jsonl`, `bus.ack_ver`; the page sends it back as `&acksV=`). Cause: the full 7-day map went out on every 2.5 s poll.
   - ⇒ The cut is floored to `ACK_CUT_STEP_S` (60 s) so it stays put between polls; the version is taken before the read; a failed read (`bus.AckMapError`) gets `acksV: ""`.
   - ⚠`acks_v` is part of the `_state_body` cache key — a body without `acks` must never reach a caller without that version (MCP, CLI, hook, since=0).

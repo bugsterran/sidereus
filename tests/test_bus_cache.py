@@ -206,6 +206,26 @@ class BusIncremental(unittest.TestCase):
         self.assertEqual(got[0], mailbox_core.acks())            # one merge rule: same result as the MCP side
         self.assertEqual(first, snap)                             # the earlier value was not mutated in place
 
+    def test_acks_skips_malformed_record_and_keeps_later_ones(self):
+        self.raw(self.acks_path, json.dumps({"id": "m1", "who": "bob", "t": 5}) + "\n"
+                 + "[1, 2]\n" + json.dumps({"id": "m1", "who": "x", "t": "soon"}) + "\n"
+                 + json.dumps({"id": ["m"], "who": "x", "t": 6}) + "\n" + "{broken\n" + "  \n"
+                 + json.dumps({"id": "m2", "who": "amy", "kind": "ack", "note": "ok", "t": 7}) + "\n", "w")
+        self.assertEqual(mailbox_core.acks(), {
+            "m1": {"delivered": ["bob"], "ack": [], "t": 5},
+            "m2": {"delivered": [], "ack": [{"who": "amy", "at": 7, "note": "ok"}], "t": 7}})
+
+    def test_ack_fold_copies_shared_entry_before_change(self):
+        shared = {"m1": {"delivered": ["bob"], "ack": [], "t": 5}}
+        out = dict(shared)
+        own = set()
+        mailbox_core.ack_fold(out, [json.dumps({"id": "m1", "who": "amy", "kind": "hooked", "t": 9}),
+                                    json.dumps({"id": "m2", "who": "eve", "t": 3})], own)
+        self.assertEqual(shared, {"m1": {"delivered": ["bob"], "ack": [], "t": 5}})   # cached map untouched
+        self.assertEqual(out, {"m1": {"delivered": ["bob", "amy"], "ack": [], "t": 9, "hooked": ["amy"]},
+                               "m2": {"delivered": ["eve"], "ack": [], "t": 3}})
+        self.assertEqual(own, {"m1", "m2"})
+
 
 class BusSlack(unittest.TestCase):
     """A post stamped earlier but appended after a later one still reaches a poll whose since passed it (S7)."""
