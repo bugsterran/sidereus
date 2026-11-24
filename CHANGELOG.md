@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tools list: MCP servers whose name holds a dot or a space (`a.b`, `claude.ai Demo`) and plugin MCP servers count their calls instead of showing 0 and «unused».
 - A typed `#pipelines` or `#tokens` address opens that tab even when an older saved view would have moved it to the Tools tab.
 - Harness report: «Go to the next one» no longer scrolls the target row under the sticky header, and the Config map project label sits next to its title instead of mid-row.
+- Messages sent from the viewer at the same moment (for example to several sessions at once) are written in time order, so a session's mail hook no longer skips one that landed a few milliseconds late.
 
 ## [0.22.0] - 2026-11-21
 

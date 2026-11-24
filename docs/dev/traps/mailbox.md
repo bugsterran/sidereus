@@ -7,6 +7,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **A post appended late was never polled** (`bus.messages(since)`). Cause: writers stamp `t` before their O_APPEND, so with several writer processes an earlier-stamped post can land after a poll moved `since` past a later one.
   - ⇒ A poll (`since > 0`) re-serves `MSG_SLACK_NS` (5 s); the page dedups by id (`95-poll.js` MSEEN). `messages_range` passes slack 0. Test `BusSlack`.
   - ⚠Do not drop the client id dedup or widen the slack — every poll re-sends the bodies inside it.
+- **Viewer posts landed out of `t` order** (★4 of 2198 bus lines, all idSrc=viewer, gap up to 12 ms). Cause: `ThreadingHTTPServer` request threads stamp `t`, then race to append; a `t > seen` reader (Stop hook, watch_bus, monitor_stream) skips the late line.
+  - ⇒ `bus._bus_append` re-stamps `t` under one lock, strictly increasing (`max(time_ns, last + 1)`). Test `BusAppendOrder`.
+  - ⚠Keep the `+ 1`: time_ns() is µs-granular on macOS and an equal `t` is skipped the same way. The lock covers this process only (0 inversions measured from the MCP server).
 - **bus.jsonl / acks.jsonl re-parsed in full on every append** (★bus 3.9 MB = 15.6 ms, acks 1.46 MB = 18.8 ms). ⇒ `bus._cached` folds only complete lines after the cached offset (same inode, larger size, unchanged 64 bytes before it); else a full parse.
   - ⚠Consume only up to the last newline (a writer mid-append) and never mutate a cached value in place (readers iterate it unlocked).
   - ⚠The ack merge rule lives only in `mailbox_core.ack_fold` (`acks()` and `bus._ack_fold` call it; `own=set()` copies a cached entry before changing it). A malformed record is skipped, never a stop (`test_ack_fold_matches_mailbox_core_and_keeps_old_value`).

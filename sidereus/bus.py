@@ -98,10 +98,20 @@ def ensure_bus(path=None):
         pass            # data dir missing or read-only: messages() still warns once
 
 
+_append_lock = threading.Lock()
+_last_append_t = 0
+
+
 def _bus_append(rec):
-    """Append one line to the bus. Append-only log, so plain append suffices (several processes write)."""
-    with _open_append(BUS) as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    """Append one line to the bus, re-stamping `t` under one lock so this process's lines are in strict `t` order.
+    ★bus.jsonl had 4 of 2198 lines out of `t` order, all idSrc=viewer (request threads stamp, then race to append;
+      gap up to 12 ms). Watermark readers (`t > seen`: Stop hook, watch_bus, monitor_stream) skip the late line.
+    ⚠Strictly increasing, not just locked: time_ns() is µs-granular on macOS, and an equal `t` is skipped the same way."""
+    global _last_append_t
+    with _append_lock:
+        _last_append_t = rec["t"] = max(time.time_ns(), _last_append_t + 1)
+        with _open_append(BUS) as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
 # ★Parse cache for the append-only logs (2026-09-25): re-parsing bus.jsonl + acks.jsonl was ~85% of a warm

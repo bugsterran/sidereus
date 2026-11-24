@@ -257,5 +257,47 @@ class BusSlack(unittest.TestCase):
         self.assertEqual([m["id"] for m in bus.messages_range(t, None, 10)], ["later"])   # range fetch stays exact
 
 
+class BusAppendOrder(unittest.TestCase):
+    """Viewer writes land in strict `t` order: _bus_append re-stamps under one lock (watermark readers use t > seen)."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._saved = (bus.BUS, bus.time, bus._last_append_t)
+        bus.BUS = os.path.join(self.tmp, "bus.jsonl")
+        bus._last_append_t = 0
+
+    def tearDown(self):
+        bus.BUS, bus.time, bus._last_append_t = self._saved
+        shutil.rmtree(self.tmp)
+
+    def lines(self):
+        with open(bus.BUS, encoding="utf-8") as f:
+            return [json.loads(x) for x in f if x.strip()]
+
+    def test_stale_stamp_is_replaced(self):
+        bus.time = types.SimpleNamespace(time_ns=lambda: NOW, time=time.time)
+        bus._bus_append({"id": "a", "t": NOW + 50})     # caller stamped later than this append
+        bus._bus_append({"id": "b", "t": NOW - 50})     # caller stamped earlier, appended second
+        ts = [r["t"] for r in self.lines()]
+        self.assertEqual(ts, [NOW, NOW + 1])            # file order = t order
+
+    def test_same_clock_value_still_increases(self):
+        bus.time = types.SimpleNamespace(time_ns=lambda: NOW, time=time.time)   # coarse clock: same value twice
+        for i in range(3):
+            bus._bus_append({"id": str(i), "t": 0})
+        self.assertEqual([r["t"] for r in self.lines()], [NOW, NOW + 1, NOW + 2])
+
+    def test_threads_append_in_t_order(self):
+        import threading
+        ths = [threading.Thread(target=bus._bus_append, args=({"id": str(i), "t": 0},)) for i in range(16)]
+        for th in ths:
+            th.start()
+        for th in ths:
+            th.join()
+        ts = [r["t"] for r in self.lines()]
+        self.assertEqual(len(ts), 16)
+        self.assertEqual(ts, sorted(set(ts)))
+
+
 if __name__ == "__main__":
     unittest.main()
