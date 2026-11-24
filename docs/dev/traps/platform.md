@@ -380,7 +380,7 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 
 ## Harness MCP row read 0 calls for a server name with a dot (`sidereus/harness.py` `_mcp_rows`)
 - Cause: calls were summed only under `mcp:<config name>`; tool names carry the sanitized form (`claude.ai X` -> `claude_ai_X`), which only the status lookup used.
-- ⇒ Count and status use one deduped key list with the sanitized form, same as `mcp_conn._keys`.
+- ⇒ Count and status use one deduped key list with the sanitized form, from `toolinv.mcp_keys` (the one source; `mcp_conn` and the Tools list call it too).
 - ⚠Keep the list deduped: `_use` sums, so a name with nothing to sanitize would count twice. `tests/test_mcp_conn.py` `test_dotted_server_calls_counted_under_tool_name_form`.
 
 ## A `TI_CACHE_V` bump costs one cold rescan (`sidereus/toolidx.py` `TI_CACHE_V`, now 6)

@@ -216,8 +216,8 @@ def _md_items(base, scope, proj, overrides, prefix="", ro=False, plug_on=True):
 
 def mcp_keys(nm, plug=""):
     """toolidx keys of one configured server: config name, plugin form, sanitized tool-name form (`a.b` -> `a_b`).
-    ⚠Deduped: scan_items sums every key, so a name with nothing to sanitize would count twice. Same forms as
-    mcp_conn._keys and harness._mcp_rows (tests compare them)."""
+    ⚠Deduped: scan_items sums every key, so a name with nothing to sanitize would count twice. Single source:
+    mcp_conn and harness._mcp_rows call this."""
     ks = ["mcp:" + nm] + (["mcp:plugin_%s_%s" % (plug, nm)] if plug else []) + ["mcp:" + _SRV_RE.sub("_", nm)]
     return list(dict.fromkeys(ks))
 

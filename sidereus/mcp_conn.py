@@ -20,7 +20,6 @@ import time
 from sidereus import ctxsrc, ext_store, plat_codex, plat_pi, toolidx, toolinv
 from sidereus.gitinfo import _git_root
 from sidereus.sessions import sessions_rows
-from sidereus.toolidx_fmt import _SRV_RE
 from sidereus.transcript import iso_epoch
 
 MC_DAYS = 30                 # Claude Code evidence window (same default as the Tools tab)
@@ -75,12 +74,6 @@ def _plug_name(root):
     return pn[:MC_NAME_MAX]
 
 
-def _keys(nm, plug):
-    """toolidx keys of one configured server; ⚠same forms as harness._mcp_rows (tests compare the two)."""
-    ks = ["mcp:" + nm] + (["mcp:plugin_%s_%s" % (plug, nm)] if plug else []) + ["mcp:" + _SRV_RE.sub("_", nm)]
-    return list(dict.fromkeys(ks))
-
-
 def _row(nm, scope, plug, tr, on, state="unknown", err="", at=0, n=None, last=None):
     return {"name": nm, "scope": scope, "plug": plug, "transport": tr, "on": bool(on), "state": state,
             "err": err, "at": int(at), "n": n, "last": last}
@@ -118,7 +111,7 @@ def _cc(ev, raw, cwd):
         if not plug and nm in names:
             continue
         names.add(nm)
-        keys = _keys(nm, plug)
+        keys = toolinv.mcp_keys(nm, plug)
         used.update(keys)
         n = sum(int((uses.get(k) or {}).get("n") or 0) for k in keys)
         last = max(int((uses.get(k) or {}).get("last") or 0) for k in keys)

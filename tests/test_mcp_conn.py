@@ -122,9 +122,7 @@ class McpConnTest(unittest.TestCase):
         it = {"name": "srv-1", "scope": "plugin", "file": "/x/cache/mk/browser/2.0.1/.mcp.json", "entry": {"command": "c"}, "on": True}
         uses = {"mcp:srv-1": {"n": 2, "last": 5}, "mcp:plugin_browser_srv-1": {"n": 3, "last": 9}, "mcp:zz": {"n": 7, "last": 1}}
         hr = H._mcp_rows([it], uses)[0]
-        keys = MC._keys(it["name"], MC._plug_name(os.path.dirname(it["file"])))
-        self.assertEqual((MC._plug_name(os.path.dirname(it["file"])), sum(uses.get(k, {}).get("n", 0) for k in keys)),
-                         (hr["plug"], hr["n"]))
+        self.assertEqual((hr["plug"], hr["n"]), ("browser", 5))   # config form 2 + plugin form 3, unrelated key ignored
         for p in ("/c/mk/browser/1.0.0", "/c/mk/browser", "", "/c/mk/9lives/1.2"):
             self.assertEqual(MC._plug_name(p), H._plug_name(p))
 

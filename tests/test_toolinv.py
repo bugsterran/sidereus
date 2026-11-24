@@ -230,10 +230,11 @@ class ToolInvTest(unittest.TestCase):
         self.assertEqual(by[("mcp", "plugin", "pw")]["uses"], 5)
         self.assertNotIn("unused", by[("mcp", "user", "claude.ai Demo")].get("flags", []))
 
-    def test_mcp_keys_match_mcp_conn(self):
-        mc = sidereus("mcp_conn")
-        for nm, plug in (("docs", ""), ("claude.ai Demo", ""), ("a.b", "pl"), ("pw", "pl")):
-            self.assertEqual(tv.mcp_keys(nm, plug), mc._keys(nm, plug))
+    def test_mcp_keys_forms(self):
+        self.assertEqual(tv.mcp_keys("docs", ""), ["mcp:docs"])
+        self.assertEqual(tv.mcp_keys("claude.ai Demo", ""), ["mcp:claude.ai Demo", "mcp:claude_ai_Demo"])
+        self.assertEqual(tv.mcp_keys("a.b", "pl"), ["mcp:a.b", "mcp:plugin_pl_a.b", "mcp:a_b"])
+        self.assertEqual(tv.mcp_keys("pw", "pl"), ["mcp:pw", "mcp:plugin_pl_pw"])
         self.assertEqual(tv.mcp_keys("docs"), ["mcp:docs"])
 
     def test_demo_tools(self):
