@@ -195,10 +195,14 @@ class _PostRoutes:
         except Exception:
             self._body_unread()
             key, keys = "", []           # Broken body falls back to mark-all-read (old behavior)
+        # ⚠Clear the state cache after the write: a cached body (1 s, stale 20 s) carried the old cardsRead and undid the mark
         if key or keys:
-            return self._send(200, json.dumps({"ok": True, "ids": mark_cards_read(([key] if key else []) + keys)}),
-                              "application/json; charset=utf-8")
-        return self._send(200, json.dumps({"ok": True, "at": set_cards_read()}), "application/json; charset=utf-8")
+            ids = mark_cards_read(([key] if key else []) + keys)
+            state_cache_clear()
+            return self._send(200, json.dumps({"ok": True, "ids": ids}), "application/json; charset=utf-8")
+        at = set_cards_read()
+        state_cache_clear()
+        return self._send(200, json.dumps({"ok": True, "at": at}), "application/json; charset=utf-8")
 
     def _p_say(self, u):
         try:

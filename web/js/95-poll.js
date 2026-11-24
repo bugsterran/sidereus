@@ -96,7 +96,7 @@ async function poll(first){
     if(seenToast===null){ seenToast=new Set(CARDS.map(ckey)); }   // First poll = seeding (no toasts)
     else { for(const c of CARDS.slice().reverse()){ const k=ckey(c);
              if(!seenToast.has(k)){ seenToast.add(k); if(isNew(c) && apolOf(c.kind) === 'badge') toast(c); } } }   // quiet kinds: no toast
-    buildAlarm();
+    buildAlarm(true);               // buildTodo runs once below, after MSGS and SESS are current
     USG = s.usage || null;
     buildQuota(s.usage, s.quota);
     buildCredit(s.quota);
@@ -105,13 +105,13 @@ async function poll(first){
     // ⚠Refresh `SV` **before** `buildBurn`/`buildSaver` — both read the same snapshot.
     LASTS = {saverView: s.saverView, saverViews: s.saverViews, saver: s.saver, usage: s.usage || null, quota: s.quota};
     svViewSet(saverViewFor(s));
-    burnTick(); buildBurn();
+    burnTick(); buildBurn(true);    // buildSbar(s.saver) runs once below with this poll's saver and QWHO
     buildSaver(s.saver);
     QWHO = s.quotaWho || null;      // read by buildSbar -> buildQwho (quota modal)
     buildSbar(s.saver);             // status bar — same poll, same inputs
     svSwSync(s.saverSwitch, s.saver);   // a CLI `/saver` change reaches the open modal within the 5s TTL
     HLTH = s.health || null; buildHealth();   // If the server failed silently, a strip is attached to the header
-    const got=s.messages.map(decorate);
+    const got=s.messages;           // decorated once by decorateSync below, after dedup
     // ★Advance `since` over **everything received** (advancing by the value after dedup would, on an all-duplicate response,
     // leave the cursor still and refetch the same posts forever).
     if(got.length) since=Math.max(since, ...got.map(m=>+m.t||0));
@@ -120,14 +120,17 @@ async function poll(first){
       if(MSEEN.has(k)) return false;
       MSEEN.add(k); return true;
     });
-    if(fresh.length){ MSGS=MSGS.concat(fresh); MSGS.forEach(decorate); }
+    if(fresh.length) MSGS=MSGS.concat(fresh);
+    decorateSync(fresh);
     // ★In work-history mode **skip** chat rendering — otherwise polling overwrites the console
     loadTl();
     try{ tlgTick(); }catch(e){ softErr('tlgTick', e); }   // Timeline «Changes» chip (77-timeline-git.js) — throttled inside, Timeline tab visible only
     // ★Drawing chat into #feed happens **only in chat mode**. Before, mode was not checked, so while viewing timeline/work history
     // a new post made `append` attach chat there (2026-09-01: chat messages flashed briefly
     // below the timeline). The next re-render erased it, so it looked like a 'flicker'.
-    buildRooms(); buildTabs(); buildMv();
+    // ⚠Rooms, filter tabs and participants live in the Chat slot only (hidden off Chat); setMainView('chat') builds them on entry.
+    if(mainView === 'chat'){ buildRooms(); buildTabs(); }
+    buildMv();
     if(wkOn && wtShown().length){
       // Update only tab status dots — the body is redrawn only when refreshAgent sees a change (scroll preserved)
       const st0 = document.querySelector('#wkmb .wtb');
@@ -141,12 +144,8 @@ async function poll(first){
       wkSumSet((wtKeyOf(wtFocus) && wtData[wtKeyOf(wtFocus)]) || agentData);   // keep "time ago" fresh
       try{ wkcPaint(); }catch(e){ softErr('wkcPaint', e); }   // compose box: recipient watch state + sent status / replies
     }
-    // ★Baseline — set once on the first poll (so old posts do not appear as 'new'), and advanced continuously while viewing chat.
-    if(first || mainView === 'chat') chatMark();
-    if(mainView !== 'chat') { /* console/timeline is using #feed — leave it alone */ }
-    else if(first){ full(); toBottom(false); }
-    else if(fresh.length){ append(fresh); }
-    refreshReceipts(); buildPeople(); buildSessions(); buildTodo();   // Read state, participants, sessions and top bar in the same poll
+    pollChatFeed(fresh);
+    refreshReceipts(); if(mainView === 'chat') buildPeople(); buildSessions(); buildTodo();   // Read state, participants, sessions and top bar in the same poll
     try { brWtTick(s.wtOrder); } catch(e){ softErr('brWtTick', e); }
     loadWku();                       // Weekly tokens — has its own 5-min interval, so not called every poll
     if(agentTid) refreshAgent();      // The open agent modal on the same cycle too (see comment below)
@@ -171,6 +170,17 @@ async function poll(first){
     }
   }catch(e){ pollDown(true, t0); }      // the reply arrived but could not be applied
   finally{ pollBusy = false; CONN.pend = 0; }
+}
+// ★Baseline — set on the first applied state (so old posts do not appear as 'new'), and advanced continuously while viewing chat.
+// ⚠Keyed on the first *applied* state, not poll(first): after a failed poll(true) the next good poll appended the whole history
+//   under the «no messages yet» placeholder and chatSeen stayed 0 (no unread badge).
+let pollFed = false;
+function pollChatFeed(fresh){
+  const init = !pollFed; pollFed = true;
+  if(init || mainView === 'chat') chatMark();
+  if(mainView !== 'chat') return;   // console/timeline is using #feed — leave it alone
+  if(init){ full(); toBottom(false); }
+  else if(fresh.length) append(fresh);
 }
 // Saver verdict of the «Main account»: primary (no main) -> s.saverView; other -> s.saverViews[label].
 // ⚠Never fall back to the primary's view for a non-primary main — null hides the chip.

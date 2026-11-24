@@ -106,9 +106,14 @@ def _bus_append(rec):
 
 # ★Parse cache for the append-only logs (2026-09-25): re-parsing bus.jsonl + acks.jsonl was ~85% of a warm
 #   /api/state build. Key = (path, ino, mtime_ns, size) so a rewrite/replace misses.
-# ⚠Only file-derived data goes in; `since` and `_ack_cut()` are applied per call. Never hand out cached objects.
+# ★An append re-parsed the whole file anyway (bus 3.9 MB = 15.6 ms, acks 1.46 MB = 18.8 ms) ⇒ same inode and a
+#   longer file fold only the complete lines after the cached offset into the cached value (`fold(base, lines, err)`).
+# ⚠Shrink, new inode, same size with a new mtime, or changed bytes just before the offset (`_TAIL_SIG`) = full parse.
+# ⚠Only file-derived data goes in; `since` and `_ack_cut()` are applied per call. Never hand out cached objects,
+#   and never mutate a cached value in place (readers iterate it outside the lock) — folds copy.
 _parse_lock = threading.Lock()
 _parse_cache = {}
+_TAIL_SIG = 64           # bytes before the offset re-checked on an append: an in-place rewrite of the same inode misses
 
 
 def _file_key(path):
@@ -119,49 +124,91 @@ def _file_key(path):
     return (path, st.st_ino, st.st_mtime_ns, st.st_size)
 
 
-def _cached(path, build):
-    """build() result for path's current stat. Stat is taken before the read, so a stale key only causes a later miss."""
+def _read_tail(path, off, sig):
+    """(lines, end offset, end sig, err) for the complete lines after byte `off`; None when the `sig` bytes before it changed.
+    ⚠Consumes only up to the last newline: a writer mid-append leaves a partial line that is read again next time,
+      never parsed half and never counted twice."""
+    with open(path, "rb") as f:
+        f.seek(off - len(sig))
+        data = f.read()
+    if data[:len(sig)] != sig:
+        return None
+    data = data[len(sig):]
+    cut = data.rfind(b"\n") + 1
+    lines, err = [], None
+    for raw in data[:cut].split(b"\n"):
+        try:
+            line = raw.decode("utf-8").strip()
+        except UnicodeDecodeError as e:
+            err = e                  # ⚠keep the lines read so far (the value is not cached with an error)
+            break
+        if line:
+            lines.append(line)
+    return lines, off + cut, (sig + data[:cut])[-_TAIL_SIG:], err
+
+
+def _cached(path, fold):
+    """fold(base value or None, new lines, read error) for path's current stat. Stat is taken before the read,
+    so a stale key only causes a later miss. A value with a read error (last item) is never cached."""
     key = _file_key(path)
     with _parse_lock:
         hit = _parse_cache.get(path)
-        if hit and hit[0] == key:
-            return hit[1]
-    val = build()
-    if val[-1] is None:              # last item = read error; a failed/partial read is never cached
+    if hit and hit[0] == key:
+        return hit[3]
+    if key[1] is None:
+        val = fold(None, [], None)
         with _parse_lock:
-            _parse_cache[path] = (key, val)
+            _parse_cache[path] = (key, 0, b"", val)
+        return val
+    base = None
+    if hit and hit[0][1] == key[1] and key[3] >= hit[1] and not (key[3] == hit[0][3] and key[2] != hit[0][2]):
+        base = hit
+    try:
+        got = _read_tail(path, base[1], base[2]) if base else None
+        if got is None:
+            base = None
+            got = _read_tail(path, 0, b"")
+    except FileNotFoundError:
+        return fold(None, [], None)  # removed between stat and open: empty, the next call stats again
+    except OSError as e:
+        return fold(None, [], e)
+    lines, end, sig, err = got
+    val = fold(base[3] if base else None, lines, err)
+    if err is None:
+        with _parse_lock:
+            _parse_cache[path] = (key, end, sig, val)
     return val
 
 
-def _bus_parse():
+def _bus_parse(base, lines, err):
     """([(t, raw line)] sorted by t (stable), unreadable-line count, read error). Raw lines so each call gets fresh objects."""
-    rows, bad, err = [], 0, None
-    try:
-        with open(BUS, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    m = json.loads(line)
-                except Exception:
-                    bad += 1        # ★never drop silently — a broken line is lost data
-                    continue
-                rows.append((int(m.get("t", 0)), line))
-    except FileNotFoundError:
-        rows = []                   # fresh install: no bus.jsonl yet = no messages, silent
-    except Exception as e:
-        err = e                     # ⚠keep the rows read so far, as the uncached reader did
-    rows.sort(key=lambda r: r[0])
+    rows, bad = (base[0], base[1]) if base else ([], 0)
+    new = []
+    for line in lines:
+        try:
+            m = json.loads(line)
+            new.append((int(m.get("t", 0)), line))
+        except Exception:
+            bad += 1                # ★never drop silently — a broken line is lost data
+    rows = rows + new               # new list: the cached base may be iterated by another thread
+    rows.sort(key=lambda r: r[0])   # stable, so old + new sorted equals one sort of the whole file
     return rows, bad, err
 
 
-def messages(since=0):
-    """Messages after since (t, ns). The parse is cached, but **the response is incremental**, so the screen is not redrawn wholesale."""
+# ⚠Writers stamp `t` before their O_APPEND, so with several writer processes a post stamped earlier can land after a
+#   poll already moved `since` past a later one. ⇒ Polls re-serve this window; the page dedups by id (95-poll.js MSEEN).
+#   Widening it re-sends more bodies on every poll.
+MSG_SLACK_NS = 5 * 10 ** 9
+
+
+def messages(since=0, slack=MSG_SLACK_NS):
+    """Messages after since (t, ns) minus `slack` when since > 0. The parse is cached, but **the response is incremental**,
+    so the screen is not redrawn wholesale."""
     out = []
+    lo = since - slack if since > 0 else since   # since=0 keeps excluding t=0 rows
     try:
         rows, bad, err = _cached(BUS, _bus_parse)
-        out = [json.loads(line) for t, line in rows if t > since]
+        out = [json.loads(line) for t, line in rows if t > lo]
         if err is not None:
             raise err
         if bad:
@@ -196,7 +243,7 @@ def messages_first(n=MSG_FIRST):
 
 def messages_range(after=0, before=None, n=MSG_RANGE_DEFAULT):
     """Full posts with after < t < before, newest `n` of them (ascending) — the feed's «Earlier posts» body fetch."""
-    out = [m for m in messages(after) if before is None or int(m.get("t", 0)) < before]
+    out = [m for m in messages(after, 0) if before is None or int(m.get("t", 0)) < before]   # exact window, no poll slack
     return out[-max(1, min(int(n), MSG_RANGE_MAX)):]
 
 
@@ -264,13 +311,45 @@ def ack_map(cut=None):
         return AckMapError()
 
 
+def _ack_fold(base, lines, err):
+    """Incremental twin of mailbox_core.acks(): (id -> {delivered, ack, t[, hooked]}, read error).
+    ⚠Same merge as mailbox_core.acks — test_bus_cache compares the two on one file; change both together.
+      A malformed record is skipped (mailbox_core stops at it). Entries are copied before a change (base is shared)."""
+    out = dict(base[0]) if base else {}
+    own = set()
+    for line in lines:
+        try:
+            r = json.loads(line)
+            mid, t, kind, who = r.get("id"), int(r.get("t") or 0), r.get("kind"), r.get("who")
+            hash(mid)
+        except Exception:
+            continue
+        e = out.get(mid)
+        if e is None:
+            e = out[mid] = {"delivered": [], "ack": [], "t": 0}
+            own.add(mid)
+        elif mid not in own:
+            e = out[mid] = {k: (list(v) if isinstance(v, list) else v) for k, v in e.items()}
+            own.add(mid)
+        e["t"] = max(e.get("t") or 0, t)
+        if kind == "ack":
+            e["ack"].append({"who": who, "at": r.get("t"), "note": r.get("note")})
+        else:
+            if who not in e["delivered"]:
+                e["delivered"].append(who)
+            if kind == "hooked" and who not in e.setdefault("hooked", []):
+                e["hooked"].append(who)
+    return out, err
+
+
 def _ack_slim(cut):
     """ack_map body for one cut; raises on failure."""
     if CODE_DIR not in sys.path:    # ⚠called per poll: an unconditional insert grew sys.path forever
         sys.path.insert(0, CODE_DIR)
     import mailbox_core
-    # ⚠mailbox_core.acks() swallows read errors, so a partial parse stays cached until the file changes
-    parsed, _ = _cached(mailbox_core.ACKS, lambda: (mailbox_core.acks() or {}, None))
+    parsed, err = _cached(mailbox_core.ACKS, _ack_fold)
+    if err is not None:
+        raise err                          # ack_map warns and sends no version (AckMapError)
     out = {}
     for mid, e in parsed.items():
         if int(e.get("t") or 0) <= cut:

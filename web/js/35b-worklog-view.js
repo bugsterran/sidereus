@@ -362,6 +362,8 @@ function workUrl(cwd, tid){
   return '/api/agent/work?cwd='+encodeURIComponent(cwd)+'&tid='+encodeURIComponent(atid)
     + (asid ? '&sid='+encodeURIComponent(asid) : '');
 }
+// ⚠2.5s tick + 15s poll both call this: only the latest request may paint (agSeq), and a tick is skipped while the same URL is in flight (agBusyUrl).
+let agSeq = 0, agBusyUrl = '';
 function refreshAgent(){
   const tid = agentTid, cwd = agentCwd;
   if(!tid) return;
@@ -374,8 +376,14 @@ function refreshAgent(){
   const vis = wkOn && !!wtShown().length;     // drawn only while the work-log modal is open
   if(!vis) return;
   const url = workUrl(cwd, tid);
+  if(agBusyUrl === url) return;                          // keyed by URL so a switch to another log still fetches at once
+  const want = ++agSeq;
+  agBusyUrl = url;
+  const done = () => { if(want === agSeq) agBusyUrl = ''; };
   getJSON(url)
     .then(j=>{
+      done();
+      if(want !== agSeq) return;                         // an older reply landing late never paints over a newer one
       if(agentTid !== tid) return;                       // closed in the meantime, or something else opened
       if(agentSig(j) === agentSig(agentData)) return;    // no change — leave it alone
       const box = agBox();
@@ -402,7 +410,7 @@ function refreshAgent(){
       const nb = agBox();
       if(nb) nb.scrollTop = atEnd ? nb.scrollHeight : top;   // follow if the end was in view
     })
-    .catch(()=>{});
+    .catch(()=>{ done(); });
 }
 // ★The session's own work log — reuses the agent modal. Putting `sess:<cwd>` in the tid slot makes
 //   polling (refreshAgent) run on the same path (the same screen isn't built twice).

@@ -1,5 +1,6 @@
 """getJSON timeout (web/js/08-ui-kit.js): a hung fetch aborts and throws (e.timeout) so the poll marks the link down;
-caller's signal still aborts; loadLive (46-tokens-tab.js) never starts a second /api/live while one is pending. Fake fetch, short ms."""
+caller's signal still aborts; loadLive (46-tokens-tab.js) never starts a second /api/live while one is pending
+and fetches nothing while no `.wkrt` is on screen. Fake fetch, short ms."""
 import json
 import re
 import shutil
@@ -28,7 +29,8 @@ function fetch(url, o){
     o.signal.addEventListener('abort', () => { const e = new Error('aborted'); e.name = 'AbortError'; rej(e); });
   });
 }
-let document = {hidden: false, querySelectorAll: () => [], querySelector: () => null};
+let WKRT = true;   // aside live chart on screen (wkSide on)
+let document = {hidden: false, querySelectorAll: () => [], querySelector: s => (s === '.wkrt' && WKRT) ? {} : null};
 let WKU = {}, CONN = {fails: 0};
 const wkLive = () => '', softErr = () => {};
 (async () => {
@@ -47,6 +49,7 @@ const wkLive = () => '', softErr = () => {};
   await a;   // test shortens its timeout to 30ms
   R.after = FETCHES;
   HANG = false; await loadLive(); R.again = FETCHES;   // guard released after the timeout
+  WKRT = false; FETCHES = 0; await loadLive(); R.noChart = FETCHES;   // no `.wkrt` (widgets off): no /api/live
   process.stdout.write(JSON.stringify(R));
 })();
 """
@@ -76,6 +79,9 @@ class GetJSONTimeout(unittest.TestCase):
         self.assertEqual(self.R["pending"], 1)
         self.assertEqual(self.R["after"], 1)
         self.assertEqual(self.R["again"], 2)
+
+    def test_no_fetch_without_live_chart(self):
+        self.assertEqual(self.R["noChart"], 0)
 
 
 if __name__ == "__main__":

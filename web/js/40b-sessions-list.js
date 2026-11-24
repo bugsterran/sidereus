@@ -18,11 +18,12 @@ function buildSessions(){
   const act = act0.filter(keep), oth0 = act0.filter(x => !keep(x)), rows = act;
   const hid = live.length - act0.length;      // count hidden by filters — **never silently reduced**
   // Worktree sessions nest under their main repo (40bb; guarded: tests load 40b alone).
-  morphHtml(box, wfFoldBtns(rows) + (typeof sessWtListHtml === 'function' ? sessWtListHtml(rows) : rows.map(x => sessRowHtml(x)).join(''))
+  const chg = morphHtml(box, wfFoldBtns(rows) + (typeof sessWtListHtml === 'function' ? sessWtListHtml(rows) : rows.map(x => sessRowHtml(x)).join(''))
     + acctOthHtml('sess', oth0.length, oth0.some(x => x.blocked || x.state === 'ask' || x.state === 'abort'))
     + (act.length ? '' : '<div class=hidnote>' + (idleMin||gitFil ? T('No active sessions match the filter.') : T('No active sessions.')) + '</div>')
     + (hid ? '<div class=hidnote>'+TV({msg: '{n} hidden by filter', vars: {n: hid}})+'</div>' : ''));
-  sessFit(box);
+  // sessFit forces layout: skip it on an unchanged poll (its ResizeObserver refits on width changes).
+  if(chg || box.clientWidth !== box._sxw) sessFit(box);
   if(typeof stodoAfter === 'function') stodoAfter(box);   // to-do add-box drafts (40c)
   // ★The list redraws every 2.5s, so no handlers on rows; **delegated to one container**
   //   (listeners piling up on every poll would leak).

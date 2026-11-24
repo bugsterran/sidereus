@@ -40,8 +40,8 @@ class BusCache(unittest.TestCase):
     def test_since_filter_and_sort(self):
         self.write(self.bus_path, [{"id": "b", "t": 20}, {"id": "a", "t": 10}, {"id": "c", "t": 30}])
         self.assertEqual([m["id"] for m in bus.messages(0)], ["a", "b", "c"])
-        self.assertEqual([m["id"] for m in bus.messages(10)], ["b", "c"])   # cached parse, filter per call
-        self.assertEqual(bus.messages(30), [])
+        self.assertEqual([m["id"] for m in bus.messages(10, 0)], ["b", "c"])   # cached parse, filter per call
+        self.assertEqual(bus.messages(30, 0), [])
 
     def test_append_misses(self):
         self.write(self.bus_path, [{"id": "a", "t": 10}])
@@ -108,18 +108,133 @@ class BusCache(unittest.TestCase):
             self.assertEqual(bus.messages(0), [])
             self.assertEqual(calls, ["bus"])
             calls.clear()
-            self.write(self.acks_path, [])                  # file exists but reading fails: still warned
-            with bus._parse_lock:
-                bus._parse_cache.clear()
-            saved_acks = mailbox_core.acks
-            mailbox_core.acks = lambda: (_ for _ in ()).throw(PermissionError("denied"))
-            try:
-                self.assertEqual(bus.ack_map(), {})
-            finally:
-                mailbox_core.acks = saved_acks
+            mailbox_core.ACKS = os.path.join(self.tmp, "d")  # acks path exists but reading fails: still warned
+            self.assertIsInstance(bus.ack_map(), bus.AckMapError)   # unknown, not an empty map with a version
             self.assertEqual(calls, ["ack-map"])
         finally:
             bus.warn_once = saved
+
+
+class BusIncremental(unittest.TestCase):
+    """Append-only logs fold only the new complete lines; the result must equal a full parse (S3)."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.bus_path = os.path.join(self.tmp, "bus.jsonl")
+        self.acks_path = os.path.join(self.tmp, "acks.jsonl")
+        self._saved = (bus.BUS, mailbox_core.ACKS, bus.time)
+        bus.BUS, mailbox_core.ACKS = self.bus_path, self.acks_path
+        bus.time = types.SimpleNamespace(time_ns=lambda: NOW, time=time.time)
+        with bus._parse_lock:
+            bus._parse_cache.clear()
+
+    def tearDown(self):
+        bus.BUS, mailbox_core.ACKS, bus.time = self._saved
+        with bus._parse_lock:
+            bus._parse_cache.clear()
+        shutil.rmtree(self.tmp)
+
+    def raw(self, path, text, mode="a"):
+        with open(path, mode, encoding="utf-8") as f:
+            f.write(text)
+
+    def _fresh(self, path, fold):
+        with bus._parse_lock:
+            saved = bus._parse_cache.pop(path, None)
+        try:
+            return fold(None, bus._read_tail(path, 0, b"")[0], None)
+        finally:
+            with bus._parse_lock:
+                if saved is not None:
+                    bus._parse_cache[path] = saved
+
+    def test_bus_append_equals_full_and_reads_only_the_tail(self):
+        self.raw(self.bus_path, json.dumps({"id": "a", "t": 30}) + "\n" + json.dumps({"id": "b", "t": 10}) + "\n", "w")
+        bus._cached(self.bus_path, bus._bus_parse)
+        reads = []
+        real = bus._read_tail
+        bus._read_tail = lambda p, off, sig: reads.append(off) or real(p, off, sig)
+        try:
+            self.raw(self.bus_path, json.dumps({"id": "c", "t": 20}) + "\n" + "{broken\n" + json.dumps({"id": "d", "t": 10}) + "\n")
+            got = bus._cached(self.bus_path, bus._bus_parse)
+        finally:
+            bus._read_tail = real
+        self.assertEqual(len(reads), 1)
+        self.assertGreater(reads[0], 0)                          # incremental: started past the cached lines
+        self.assertEqual(got, self._fresh(self.bus_path, bus._bus_parse))
+        self.assertEqual([json.loads(l)["id"] for _t, l in got[0]], ["b", "d", "c", "a"])   # stable by t, file order on ties
+        self.assertEqual(got[1], 1)
+
+    def test_partial_last_line_held_back_then_counted_once(self):
+        self.raw(self.bus_path, json.dumps({"id": "a", "t": 10}) + "\n", "w")
+        self.raw(self.acks_path, json.dumps({"id": "m1", "who": "bob", "t": NOW - 1}) + "\n", "w")
+        self.assertEqual([m["id"] for m in bus.messages(0)], ["a"])
+        bus.ack_map()
+        line = json.dumps({"id": "b", "t": 20}) + "\n"
+        ack = json.dumps({"id": "m1", "who": "amy", "kind": "ack", "note": "ok", "t": NOW - 1}) + "\n"
+        self.raw(self.bus_path, line[:9])                       # writer mid-append
+        self.raw(self.acks_path, ack[:12])
+        self.assertEqual([m["id"] for m in bus.messages(0)], ["a"])
+        self.assertEqual(bus._cached(self.bus_path, bus._bus_parse)[1], 0)   # not counted as a broken line
+        self.assertEqual(bus.ack_map()["m1"]["ack"], [])
+        self.raw(self.bus_path, line[9:])
+        self.raw(self.acks_path, ack[12:])
+        self.assertEqual([m["id"] for m in bus.messages(0)], ["a", "b"])
+        self.assertEqual(bus._cached(self.bus_path, bus._bus_parse), self._fresh(self.bus_path, bus._bus_parse))
+        self.assertEqual(bus.ack_map()["m1"], {"delivered": ["bob"], "ack": [{"who": "amy", "note": "ok"}]})
+
+    def test_truncation_and_rewrite_fall_back_to_full(self):
+        self.raw(self.bus_path, "".join(json.dumps({"id": "m%d" % i, "t": i}) + "\n" for i in range(1, 6)), "w")
+        self.assertEqual(len(bus.messages(0)), 5)
+        self.raw(self.bus_path, json.dumps({"id": "x", "t": 1}) + "\n", "w")        # truncated in place, same inode
+        self.assertEqual([m["id"] for m in bus.messages(0)], ["x"])
+        self.raw(self.bus_path, json.dumps({"id": "y", "t": 2}) + "\n", "w")        # rewritten in place, grown later
+        self.raw(self.bus_path, json.dumps({"id": "z", "t": 3}) + "\n")
+        self.assertEqual([m["id"] for m in bus.messages(0)], ["y", "z"])
+        self.assertEqual(bus._cached(self.bus_path, bus._bus_parse), self._fresh(self.bus_path, bus._bus_parse))
+
+    def test_ack_fold_matches_mailbox_core_and_keeps_old_value(self):
+        recs = [{"id": "m1", "who": "bob", "t": NOW - 5}, {"id": "m1", "who": "bob", "kind": "hooked", "t": NOW - 4},
+                {"id": "m2", "who": "amy", "kind": "ack", "note": "n", "t": NOW - 3}]
+        self.raw(self.acks_path, "".join(json.dumps(r) + "\n" for r in recs[:2]), "w")
+        first = bus._cached(self.acks_path, bus._ack_fold)[0]
+        snap = json.loads(json.dumps(first))
+        more = [{"id": "m1", "who": "eve", "kind": "ack", "note": "late", "t": NOW - 1}, {"id": "m1", "who": "bob", "t": NOW - 2}]
+        self.raw(self.acks_path, "".join(json.dumps(r) + "\n" for r in recs[2:] + more))
+        got = bus._cached(self.acks_path, bus._ack_fold)
+        self.assertIsNone(got[1])
+        self.assertEqual(got[0], mailbox_core.acks())            # one merge rule: same result as the MCP side
+        self.assertEqual(first, snap)                             # the earlier value was not mutated in place
+
+
+class BusSlack(unittest.TestCase):
+    """A post stamped earlier but appended after a later one still reaches a poll whose since passed it (S7)."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._saved = bus.BUS
+        bus.BUS = os.path.join(self.tmp, "bus.jsonl")
+        with bus._parse_lock:
+            bus._parse_cache.clear()
+
+    def tearDown(self):
+        bus.BUS = self._saved
+        with bus._parse_lock:
+            bus._parse_cache.clear()
+        shutil.rmtree(self.tmp)
+
+    def test_late_append_inside_slack_is_served(self):
+        t = NOW
+        with open(bus.BUS, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"id": "later", "t": t + 10 ** 9}) + "\n")
+        since = max(m["t"] for m in bus.messages(0))              # poll advanced past the later post
+        with open(bus.BUS, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"id": "early", "t": t}) + "\n")   # stamped first, appended second
+            f.write(json.dumps({"id": "old", "t": t - bus.MSG_SLACK_NS}) + "\n")
+        self.assertEqual({m["id"] for m in bus.messages(since)}, {"later", "early"})   # page dedups "later" by id
+        self.assertNotIn("old", {m["id"] for m in bus.messages(since)})                 # window stays small
+        self.assertEqual(bus.messages(since, 0), [])
+        self.assertEqual([m["id"] for m in bus.messages_range(t, None, 10)], ["later"])   # range fetch stays exact
 
 
 if __name__ == "__main__":

@@ -18,6 +18,13 @@ function decorate(m){
   m.audience = mem.filter(x=>x!==m.from);
   return m;
 }
+// ⚠decorate reads ROOMS/PROF/MINE, which every poll replaces: a member change with no new post re-decorates all MSGS (0.65 ms / 2198).
+let DECO_SIG = null;
+function decorateSync(fresh){   // fresh must already be in MSGS
+  const sig = JSON.stringify([ROOMS, PROF, MINE]);
+  if(sig === DECO_SIG){ fresh.forEach(decorate); return; }
+  DECO_SIG = sig; MSGS.forEach(decorate);
+}
 function readersOf(m){ return m.audience.filter(w=>(CUR[w]||0)>=m.t); }
 function receipt(m){
   if(m.selfaddr) return '<div class=rd>'+T('⚠ from == to — the sender field cannot be trusted')+'</div>';
@@ -47,14 +54,36 @@ function answered(m){
   //   tagged "[done · batch reply] ..." and didn't match → **a reply came but all my posts stayed 'awaiting reply'**.
   //   Sending several and getting one reply is normal conversation, yet the label hinged on one phrase.
   //   ⚠But if the other side only sent a counter-question (`ask`), that is not a reply — then **their bubble** shows as awaiting reply.
-  return MSGS.some(o => o.thread === m.thread && o.t > m.t && o.from !== m.from
-                        && !(o.kind && o.kind.cls === 'ask'));
+  //   Read from waitIx: a later non-ask post by someone else = the thread's latest non-ask (a1), or a2 when a1 is m's own sender.
+  const e = waitIx()[m.thread];
+  if(!e) return false;
+  const r = e.a1 && e.a1.from !== m.from ? e.a1 : e.a2;
+  return !!r && r.t > m.t;
 }
-function waiting(m){ if(!(m.kind&&m.kind.cls==='ask'&&m.thread)) return false;
+// Per-thread index, rebuilt once per MSGS version: waiting() scanned MSGS per ask (O(asks x MSGS), 6.3 ms/poll in a 1078-ask room).
+// last = latest post (ties: later in MSGS); a1 = latest non-ask post; a2 = latest non-ask post from a sender other than a1's.
+let WAITIX = null;
+function waitIx(){
+  if(WAITIX && WAITIX.src === MSGS && WAITIX.n === MSGS.length) return WAITIX.by;
+  const by = {};
+  for(const o of MSGS){
+    if(!o.thread) continue;
+    const e = by[o.thread] || (by[o.thread] = {last: null, a1: null, a2: null});
+    if(!e.last || o.t >= e.last.t) e.last = o;
+    if(o.kind && o.kind.cls === 'ask') continue;
+    if(!e.a1 || o.t > e.a1.t){ if(e.a1 && e.a1.from !== o.from) e.a2 = e.a1; e.a1 = o; }
+    else if(o.from !== e.a1.from && (!e.a2 || o.t > e.a2.t)) e.a2 = o;
+  }
+  WAITIX = {src: MSGS, n: MSGS.length, by: by};
+  return by;
+}
+function waiting(m){
+  if(!(m.kind&&m.kind.cls==='ask'&&m.thread)) return false;
   // A closed thread is not awaiting reply — the other side declared "no reply needed".
-  const later=MSGS.filter(o=>o.thread===m.thread&&o.t>m.t);
-  if(later.length&&later[later.length-1].kind&&later[later.length-1].kind.cls==='done') return false;
-  return !answered(m); }
+  const e = waitIx()[m.thread], l = e && e.last;
+  if(l && l.t > m.t && l.kind && l.kind.cls === 'done') return false;
+  return !answered(m);
+}
 
 function bubble(m, fresh){
   const k=m.kind;

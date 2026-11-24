@@ -200,7 +200,7 @@ function grpLines(g){
 // Transition cards (wait/ask/abort) arrive with an empty body — cards() strips old stored text (rule 1, 2026-09-25).
 // Agent cards carry the raw Agent description; strip a leading [pl:…] tag for display and grouping (pipeline code reads sub labels, not cards).
 function cardText(c){ const t = plStrip((c.text || '').trim()); return c.kind === 'bgdone' ? monLab(t) : t; }
-function buildAlarm(){
+function buildAlarm(noTodo){   // noTodo: poll() runs buildTodo itself later in the same poll
   const unread = alarmBadgeN();
   const bell=document.getElementById('bell'), bdg=document.getElementById('bdg');
   bell.classList.toggle('has', unread>0);
@@ -236,7 +236,7 @@ function buildAlarm(){
   //   (with several windows the title is the only way to tell them apart). Unguarded, polling overwrites it every time.
   // ★The leading `[n]` is **sessions needing me** — now the attention strip's count (17-attention.js), so "1 question waiting" isn't buried as chat piles up
   buildAttn(); attnTitle();
-  const tb=document.getElementById('todo'); if(tb) buildTodo();     // the bar shrinks too right after marking read
+  const tb=document.getElementById('todo'); if(tb && noTodo !== true) buildTodo();     // the bar shrinks too right after marking read
   const fav = document.getElementById('fav');
   if (fav && FAV_PLAIN) fav.href = unread ? FAV_DOT : FAV_PLAIN;
 }

@@ -258,6 +258,7 @@ function setMainView(v){
   // chat (the old 'work' branch is gone — the work log is the #wkm modal now)
   agView = 'modal';
   chatMark();                           // Opening this view means 'seen' — clear the badge
+  buildRooms(); buildTabs(); buildPeople();   // ⚠poll() builds these only while Chat is open; buildRooms may reset a gone place before full()
   full();                               // Returning to chat redraws the feed (or the room list)
   if(place === 'all' && !q) feed.scrollTop = 0; else toBottom(false);
   buildMv();

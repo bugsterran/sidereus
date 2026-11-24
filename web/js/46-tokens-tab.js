@@ -341,7 +341,8 @@ function tkModels(){
 // «Token widgets on the right» (default off): on keeps donut/daily/today/live in the aside; off moves them to the token tab and 5h card.
 let WKSIDE = null;
 function wkSide(){ if(WKSIDE !== null) return WKSIDE; try{ return UIS.getItem('sidereus.wkside') === '1'; }catch(e){ return false; } }
-function wkSideSet(on){ WKSIDE = !!on; lsSet('sidereus.wkside', on ? '1' : '0'); wkSideApply(); }
+// Turning it on refreshes live right after the caller's buildWku draws `.wkrt` (loadLive skips while none exists).
+function wkSideSet(on){ WKSIDE = !!on; lsSet('sidereus.wkside', on ? '1' : '0'); wkSideApply(); if(on) setTimeout(loadLive, 0); }
 function wkSideApply(){ document.body.classList.toggle('wkside', wkSide()); }
 wkSideApply();
 function buildWku(){
@@ -456,6 +457,7 @@ async function loadLive(){
   if(document.hidden || !WKU) return;      // If the card does not exist yet, loadWku draws it first
   if(CONN.fails) return;                   // server down: the poll backs off; a 3s knock would only add console errors
   if(liveBusy) return;
+  if(!document.querySelector('.wkrt')) return;   // ⚠the live chart exists only in the aside (wkSide on); none on screen = no fetch
   let j;
   liveBusy = true;
   try{ j = await getJSON('/api/live', {timeout: 10000}); }

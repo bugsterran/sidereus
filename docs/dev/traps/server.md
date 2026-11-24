@@ -18,6 +18,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**A stalled server left the bar «● Connected»** (2026-10-13 sandbox, SIGSTOP 20 s: CONN.fails stayed 0; 7 pending `/api/live` used up Chrome's 6 connections per host). Cause: `getJSON` had no timeout, so one `/api/state` hung and `pollBusy` skipped every later tick.
   - ⇒ `getJSON(url, {timeout})` aborts (default 120 s, `e.timeout`); the poll passes 15 s warm / 75 s cold or after an outage (STATE_COLD_S 60 s) → `pollDown`; `loadLive` has a `liveBusy` guard + 10 s.
   - ⚠Never fire a timer-driven fetch without an in-flight guard, and never give a cold path (first state, timeline 90 s) the warm timeout. Test `tests/test_getjson_timeout_js.py`.
+- **Work-log refresh repainted older data over newer** (`refreshAgent`, `web/js/35b-worklog-view.js`). Cause: the 2.5 s tick and the 15 s poll both fetch `/api/*/work` with no guard; a slow reply landing last passed the «signature changed» check and painted.
+  - ⇒ `agSeq` (only the latest request paints) + `agBusyUrl` (skip a tick while the same URL is in flight).
+  - ⚠Key the busy guard by URL, not a bare flag: a switch to another log must fetch at once. A signature compare is not an order check. Test `tests/test_worklog_refresh_seq_js.py`.
 - ★**`/api/quota/burn` cold miss took 6-20 s and hooks timed out** (2026-09-29 after a reboot, /usr/bin/true 0.6 s; 28 hook_cancelled in one session). Cause: `_tok_events` -> `_tl_pick` ran a 40 s cold `sessions()` in the request thread every 30 s TTL miss.
   - ⇒ `_tl_snap_rows()` (sidereus/timeline.py): fresh snapshot (0.5 s wait) → last snapshot → `[]`; a snapshot-less result is cached only 5 s.
   - ⚠Never call `sessions()` from a request or hook path (saver.py · mailbox_stop 5 s · invite_notice 10 s call burn). Test `tests/test_tl_pick_nospawn.py`.

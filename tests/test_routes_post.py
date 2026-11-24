@@ -207,6 +207,15 @@ class CardsReadTest(_Base):
         self.assertEqual(sorted(cards.cards_read_ids()), ["a|done|p", "b|done|p"])
         self.assertFalse(os.path.exists(self.mark))
 
+    def test_state_cache_cleared_after_the_write(self):
+        # a cached /api/state body would bring the old cardsRead back for one poll
+        seen = []
+        self.patch(RP, "state_cache_clear",
+                   lambda: seen.append((os.path.exists(self.mark), sorted(cards.cards_read_ids()))))
+        post("/api/cards/read", {"keys": ["a|done|p"]})
+        post("/api/cards/read", b"")
+        self.assertEqual(seen, [(False, ["a|done|p"]), (True, [])])
+
 
 class SaverSetTest(_Base):
     def setUp(self):

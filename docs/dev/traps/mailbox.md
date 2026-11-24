@@ -4,6 +4,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Mailbox and chat
 
+- **A post appended late was never polled** (`bus.messages(since)`). Cause: writers stamp `t` before their O_APPEND, so with several writer processes an earlier-stamped post can land after a poll moved `since` past a later one.
+  - ⇒ A poll (`since > 0`) re-serves `MSG_SLACK_NS` (5 s); the page dedups by id (`95-poll.js` MSEEN). `messages_range` passes slack 0. Test `BusSlack`.
+  - ⚠Do not drop the client id dedup or widen the slack — every poll re-sends the bodies inside it.
+- **bus.jsonl / acks.jsonl re-parsed in full on every append** (★bus 3.9 MB = 15.6 ms, acks 1.46 MB = 18.8 ms). ⇒ `bus._cached` folds only complete lines after the cached offset (same inode, larger size, unchanged 64 bytes before it); else a full parse.
+  - ⚠Consume only up to the last newline (a writer mid-append) and never mutate a cached value in place (readers iterate it unlocked).
+  - ⚠`bus._ack_fold` mirrors `mailbox_core.acks`; change both together (`test_ack_fold_matches_mailbox_core_and_keeps_old_value`).
 - **`acks` is sent only when its version changed** (`acksV` = `<mtime_ns>-<size>-<cut>` of `acks.jsonl`, `bus.ack_ver`; the page sends it back as `&acksV=`). Cause: the full 7-day map went out on every 2.5 s poll.
   - ⇒ The cut is floored to `ACK_CUT_STEP_S` (60 s) so it stays put between polls; the version is taken before the read; a failed read (`bus.AckMapError`) gets `acksV: ""`.
   - ⚠`acks_v` is part of the `_state_body` cache key — a body without `acks` must never reach a caller without that version (MCP, CLI, hook, since=0).
@@ -15,6 +21,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **#feed is shared by every tab, so its `setHtml` cache (`_sh`) goes stale** (room cards, 92 `rcPaint`). Cause: `full()` and other tabs write `feed.innerHTML` directly without clearing `feed._sh`, so a later `setHtml(feed, h)` with the same `h` is skipped and the room list stays blank.
   - ⇒ `rcPaint` skips only when its own `feed._rcH` matches and `:scope > .rcw` exists; it and `full()` clear `feed._sh` after writing.
   - ⚠Do not use `setHtml(feed, …)` for chat. `toBottom` goes to the top while `.rcw` is showing (the room list reads top-down).
+- **The chat feed's first paint keyed on `poll(true)`, not on the first applied state** (`95-poll.js` `pollChatFeed`). Cause: a failed first poll (timeout, non-2xx) left the next good poll to `append` the whole history under «no messages yet», and `chatSeen` stayed 0 (no unread badge).
+  - ⇒ `pollFed` flips on the first applied state; that state runs `chatMark` + `full()`. Test `test_poll_chat_feed_js`.
+  - ★Rooms, filter tabs and participants (`buildRooms`/`buildTabs`/`buildPeople`) cost 6.3 ms/poll off Chat (1078 `waiting` calls). ⇒ poll builds them only while Chat is open; `setMainView('chat')` builds them on entry; `waiting` reads the per-thread `waitIx`.
+  - ⚠Anything visible off Chat must not depend on those three (the Chat tab badge uses `chatNew`). A new entry into Chat that bypasses `setMainView` must call them itself.
 - **Chat has no threads** (rooms only). The bus still carries `thread` fields (MCP, pipeline DMs, invites); the chat UI ignores them. ⚠Saved views / ui-keep with an old `byThread` key must keep loading (key ignored, tested).
 - **Mailbox watch default (`mailbox_watch` pref, 90d) is read raw by `hooks/invite_notice.py`.** Cause: hooks must not import `sidereus/*`. ⇒ the hook reads `config.local.json` itself; longest project-path prefix wins, else `mode`; missing/broken = on.
   - ⚠Both sides resolve paths the same way (prefix per path segment) — change one, change the other.

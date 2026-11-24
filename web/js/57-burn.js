@@ -1,5 +1,5 @@
-function buildBurn(){
-  buildSbar();
+function buildBurn(noSbar){   // noSbar: poll() runs buildSbar(s.saver) itself later in the same poll
+  if(noSbar !== true) buildSbar();
   const el = document.getElementById('burn');
   if(!el) return;
   const b = burnDraw(), un = burnUse(), ul = acctList() ? un.label : '';   // name the account only with >= 2 accounts
