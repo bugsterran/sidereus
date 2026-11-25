@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Mailbox: «Clear» on a stale thread now posts `[DONE] Cleanup` with an English body instead of a Korean tag. Every released version already reads `DONE` as closed; posts with the Korean tag still close threads.
 
+### Fixed
+
+- Sessions: when `claude agents --json` is slow, rows keep the last session identity as long as no session file changed, instead of falling back to the less reliable command-line guess after 90 s.
+
 ## [0.23.0] - 2026-11-25
 
 **Highlights**

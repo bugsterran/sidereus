@@ -172,3 +172,38 @@ class AgentViewAccounts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AgentViewSigHolds(unittest.TestCase):
+    """A slow CLI past AGENTS_STALE_S keeps the last value while the registry signature is unchanged."""
+
+    def setUp(self):
+        AgentViewAccounts.setUp(self)            # same stand-ins; not a subclass so the account tests do not rerun
+        self.sig = ("pid1", "s1")
+        p = mock.patch.object(la, "_av_registry_sig", lambda d: self.sig)
+        p.start()
+        self.addCleanup(p.stop)
+        saved = dict(la._av_sigs)
+        self.addCleanup(lambda: (la._av_sigs.clear(), la._av_sigs.update(saved)))
+        la._av_sigs.clear()
+
+    def _age_and_fail(self):
+        self.sub.outs[PRIM] = _rows(1)
+        self.assertEqual(set(la.agent_view()), {"1"})
+        self.sub.outs[PRIM] = _real_sp.TimeoutExpired("claude", 6)
+        for _ in range(4):                       # several failed safety refreshes, past the stale window
+            self.clock.t += max(la.AGENTS_MAX_AGE, la.AGENTS_FAIL_TTL) + 1
+            v = la.agent_view()
+        self.assertGreater(self.clock.t - la._av_cache[0], la.AGENTS_STALE_S)
+        return v
+
+    def test_unchanged_signature_keeps_last_value(self):
+        self.assertEqual(set(self._age_and_fail()), {"1"})
+
+    def test_changed_signature_still_expires(self):
+        self.sub.outs[PRIM] = _rows(1)
+        la.agent_view()
+        self.sig = ("pid2", "s2")                # a session started or ended: the old answer may be wrong
+        self.sub.outs[PRIM] = _real_sp.TimeoutExpired("claude", 6)
+        self.clock.t += la.AGENTS_STALE_S + 1
+        self.assertIsNone(la.agent_view())

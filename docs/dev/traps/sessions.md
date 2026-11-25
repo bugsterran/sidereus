@@ -356,6 +356,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Do not change the EXITED branch of `_live_slot` / `transcript._continued` instead (a dead /exit file would hold the slot forever). ⚠Known gap: ps has no start time — a `-c` pid first seen after a newer same-cwd session exited claims that newer sid.
 - ⚠Known gap: the newest-transcript lookup spans every account root, so a `-c` pid the official answer misses can claim another account's newer same-cwd sid. Left as is: binding a pid to its account needs process-env inspection.
 
+## A slow `claude agents --json` dropped identity to the argv guess while nothing had changed (`live_agents._av_fallback`)
+
+- Cause: the last answer expired after `AGENTS_STALE_S` (90 s) even when the registry signature still matched, so two timeouts in a row cleared the cache and identity fell back to the argv-label guess the module header documents as wrong. ★2026-11-20..25: 19 timeout lines, 9 «Could not query», 12 of them at load 3.2-6.7.
+- ⇒ `_av_sig_holds(sig, sig_key)`: while the signature equals the one stored at the last success, the last answer is kept past the stale window (stale mark + soft warning `agents-slow-held`). A changed signature still expires as before. Tests `tests/test_agent_view_accounts.py` (`AgentViewSigHolds`).
+- ⚠Only valid while the signature covers every field the answer is read for (pid, sessionId, cwd, pid alive) — adding a field to the answer use means adding it to `claude_roots.registry_sig`. No registry dir ⇒ `sig` is None ⇒ old behaviour.
+
 ## `claude agents --json` exit code ignored made every open session read ended (`live_agents._av_fetch`)
 
 - Cause: a non-zero exit with empty stdout parsed as `[]` = «no sessions», so off macOS (no ps fallback) every open row ended.

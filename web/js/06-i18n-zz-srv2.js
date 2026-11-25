@@ -23,6 +23,7 @@ Object.assign(I18N.ko, {
   "load {load} at the time": "그때 부하 {load}",
   "Session label staleness check failed ({err})": "세션 라벨 검사가 실패했습니다({err})",
   "Official session lookup is slow ({err}) — using the last value for up to {n}s": "공식 세션 조회가 느립니다({err}) — 직전 값을 {n}초까지 씁니다",
+  "Official session lookup is slow ({err}) — session files are unchanged, so the last value still holds": "공식 세션 조회가 느립니다({err}) — 세션 파일이 그대로라 직전 값이 유효합니다",
   "Could not query official sessions (claude agents --json, {err}) — identity falls back to the old argv-label guess": "공식 세션 조회(claude agents --json)를 못 했습니다({err}) — 신원 판정이 옛 추론(argv 라벨)으로 떨어집니다",
   "Tool process lookup is slow ({err}) — using the last value for up to {n}s": "툴 실행 프로세스 조회가 느립니다({err}) — 직전 값을 {n}초까지 씁니다",
   "Could not read tool processes ({err}) — 'running a tool' falls back to 'unknown'": "툴 실행 프로세스를 읽지 못했습니다({err}) — '도구 실행 중' 판정이 '모름' 으로 떨어집니다",

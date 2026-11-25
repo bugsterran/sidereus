@@ -47,10 +47,19 @@ _av_sigs = {}               # account key ("" = single account, else realpath) -
 _AV_BG = Refresher()            # background `claude agents --json` refresh, keyed per account
 
 
-def _av_fallback(now, cache=None):
-    """Value while the negative cache is valid — **same fallback as the failure branch** (last value if still fresh, else unknown)."""
+def _av_sig_holds(sig, sig_key):
+    """Registry signature unchanged since the last success ⇒ the CLI's pid→sessionId answer cannot have changed."""
+    return sig is not None and _av_sigs.get(sig_key) == sig
+
+
+def _av_fallback(now, cache=None, holds=False):
+    """Value while the negative cache is valid — **same fallback as the failure branch** (last value if still fresh, else unknown).
+
+    ⚠`holds` (registry signature unchanged) keeps the last value past AGENTS_STALE_S: a slow CLI then cannot drop
+    identity to the argv-label guess, which is known to be wrong (module header). The signature covers every field used.
+    """
     prev_at, prev = cache if cache is not None else _av_cache
-    if prev is not None and now - prev_at < AGENTS_STALE_S:
+    if prev is not None and (holds or now - prev_at < AGENTS_STALE_S):
         return prev
     return None
 
@@ -137,12 +146,13 @@ def _av_one(env, cache, fail, ttl, skey, cfg_dir="", sig_key=None):
     # ★★Failures are cached too (2026-09-22): 6 callers per `state()` × 6 s timeout = 36 s cold response (measured
     #   38.5 s; 49 `TimeoutExpired` lines in `viewer.err`). ⇒ Within AGENTS_FAIL_TTL, no fork; same fallback as failure.
     if now - fail[0] < AGENTS_FAIL_TTL:
-        return _av_fallback(now, cache)
+        return _av_fallback(now, cache, _av_sig_holds(sig, sig_key))
     # ★At load 138-190 /api/state took 30-39 s waiting on lookups. ⇒ Serve the last value, refresh in the background.
     #   ⚠Cold start asks inline only off the request path (memo.request_path); there None (unknown) until it lands.
-    if (cache[1] is not None and now - cache[0] < AGENTS_STALE_S) or on_request_path():
+    holds = _av_sig_holds(sig, sig_key)
+    if (cache[1] is not None and (holds or now - cache[0] < AGENTS_STALE_S)) or on_request_path():
         _AV_BG.kick(sig_key or "", lambda: _av_fetch(env, cache, fail, skey, sig, sig_key, fresh))
-        return _av_fallback(time.time(), cache)   # re-read: an inline spawn (tests) has just refreshed it
+        return _av_fallback(time.time(), cache, holds)   # re-read: an inline spawn (tests) has just refreshed it
     return _av_fetch(env, cache, fail, skey, sig, sig_key, fresh)
 
 
@@ -153,7 +163,7 @@ def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
         if fresh(now):
             return cache[1]              # another thread just filled it — don't spawn again
         if now - fail[0] < AGENTS_FAIL_TTL:
-            return _av_fallback(now, cache)     # another thread just failed — don't spawn again
+            return _av_fallback(now, cache, _av_sig_holds(sig, sig_key))   # another thread just failed — don't spawn again
         prev_at, prev = cache
         try:
             r = subprocess.run([bin_path("claude"), "agents", "--json"],
@@ -191,6 +201,14 @@ def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
                     _stale_clear(skey)
                 cache[0], cache[1] = 0.0, None
                 return None
+            holds = _av_sig_holds(sig, sig_key)
+            if prev is not None and holds and time.time() - prev_at >= AGENTS_STALE_S:
+                # ★Past the stale window but no session file changed: the last answer is still the answer.
+                if skey:
+                    _stale_mark(skey, prev_at)
+                warn_once("agents-slow-held", "Official session lookup is slow ({err}) — session files are unchanged,"
+                          " so the last value still holds", soft=True, vars={"err": type(e).__name__}, more=_slow_why())
+                return prev
             if prev is not None and time.time() - prev_at < AGENTS_STALE_S:
                 if skey:
                     _stale_mark(skey, prev_at)     # ★surface staleness on screen (health strip) — fallback unchanged
