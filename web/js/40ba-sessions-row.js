@@ -125,7 +125,17 @@ function sessWorkBadges(x){
   const wrk = (x.wreck > 0)
     ? '<span class=swr data-wreck="'+esc(x.cwd)+'" title="'+esc(TV({msg: '{n} files touched by an interrupted subagent are still uncommitted — you decide whether to finish or revert. Click to open the diff', vars: {n: x.wreck}}))
       +'">'+T('Leftover ')+x.wreck+'</span>' : '';
-  return errb + wrk + (typeof gmsParChip === 'function' ? gmsParChip(x, 'sgpar') : '') + sessPlChip(x);   // child CLIs running at once (40b)
+  // sessPmChip guarded: tests load sessWorkBadges without it
+  return errb + wrk + (typeof gmsParChip === 'function' ? gmsParChip(x, 'sgpar') : '')   // child CLIs running at once (40b)
+    + (typeof sessPmChip === 'function' ? sessPmChip(x) : '') + sessPlChip(x);
+}
+// = sidereus/live_probe._NO_PROMPT_MODES (tests/test_sess_pm_chip_js.py keeps them equal).
+const SESS_NOPROMPT = ['bypassPermissions', 'auto', 'dontAsk'];
+// «No prompts»: the session's latest permission mode runs tools without approval prompts; default/unknown = nothing.
+// ⚠Class spm, never sz/sk/sm (SX_DROP would hide it); Claude Code rows only — other CLIs send no such mode.
+function sessPmChip(x){
+  if(!x || !SESS_NOPROMPT.includes(x.pmode) || (x.plat && x.plat !== 'cc')) return '';
+  return '<span class=spm title="'+esc(TV({msg: 'Permission mode {m} — tools run without approval prompts', vars: {m: x.pmode}}))+'">'+esc(T('No prompts'))+'</span>';
 }
 // Action group: resume copy · terminal jump.
 function sessActs(x){

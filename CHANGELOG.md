@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Sessions and Pipelines: a session row shows «No prompts» when its permission mode runs tools without approval prompts (`bypassPermissions`, `auto`, `dontAsk`), and the Watch result pane says when a pipeline run ran in such a mode.
+
 ### Changed
 
 - Mailbox: «Clear» on a stale thread now posts `[DONE] Cleanup` with an English body instead of a Korean tag. Every released version already reads `DONE` as closed; posts with the Korean tag still close threads.

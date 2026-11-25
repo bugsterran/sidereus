@@ -208,7 +208,8 @@ class DemoTest(unittest.TestCase):
     def test_plrun_shape(self):
         rows = self.get("/api/state", "since=0")["sessions"]
         (r,) = [p for x in rows for p in x.get("plrun", []) if p["name"] == "change-flow"]
-        self.assertEqual(set(r), {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
+        # `pm` (no-prompt permission modes in effect) is present only when one applied.
+        self.assertEqual(set(r) - {"pm"}, {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
         self.assertEqual((r["cur"], r["end"]), ("검증", 0))
         self.assertEqual({t: s["o"] for t, s in r["stages"].items()}, {"설계": "done", "구현": "done", "검증": "run"})
         im = r["stages"]["구현"]

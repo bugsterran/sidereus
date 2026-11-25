@@ -168,7 +168,8 @@ class SameKeysAsRealBuilders(_Patch):
                          [("change-flow", False), ("hotfix", False), ("release-check", True)])
         self.assertEqual([r["t1"] for r in pl], sorted((r["t1"] for r in pl), reverse=True))   # newest first
         for r in pl:
-            self.assertEqual(set(r), {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
+            # `pm` (no-prompt permission modes in effect) is present only when one applied.
+            self.assertEqual(set(r) - {"pm"}, {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
             for s in r["stages"].values():
                 self.assertLessEqual(set(s), {"o", "n", "t0", "t1", "from", "p0", "k", "ag", "ps", "cm"})
                 cm = s.get("cm", [])   # commit stamps: epoch numbers only

@@ -117,6 +117,76 @@ def _pmode_of(fp, rows, nbytes):
     return m
 
 
+# fp -> (offset after the last complete line scanned, [[mode, first_ts, last_ts]] oldest first); later calls read appended bytes only.
+_PMODE_SPANS = {}
+_PMODE_SPAN_CAP = 64        # newest spans kept; ⚠older history beyond it (or beyond _PMODE_SCAN) is unknown, never «default»
+_PMODE_CHUNK = 1_000_000
+_PMODE_NAME = re.compile(r"[A-Za-z]{1,32}")
+_PMODE_USER_RE = re.compile(rb'"type":\s*"user"')
+
+
+def _pmode_line(ln):
+    """(mode, ts) of one user-prompt line carrying `permissionMode`, else None. ⚠Only the mode and time leave here."""
+    if b'"permissionMode"' not in ln or not _PMODE_USER_RE.search(ln):
+        return None
+    try:
+        d = json.loads(ln.decode("utf-8", "replace"))
+    except ValueError:
+        return None
+    m = d.get("permissionMode") if isinstance(d, dict) and d.get("type") == "user" else None
+    ts = _line_ts(d, 0) if isinstance(m, str) and _PMODE_NAME.fullmatch(m) else 0
+    return (m, ts) if ts else None
+
+
+def pmode_spans(fp):
+    """[[mode, first_ts, last_ts]] of prompt lines, oldest first, equal neighbours merged, newest _PMODE_SPAN_CAP kept.
+    First call reads the last _PMODE_SCAN bytes; then only appended complete lines. [] = none within reach / unreadable."""
+    memo = _PMODE_SPANS.get(fp)
+    off, spans = memo or (0, [])
+    try:
+        size = os.path.getsize(fp)
+        if memo is not None and off > size:          # rewritten/truncated file: the memo is void
+            memo, off, spans = None, 0, []
+        if memo is not None and off == size:
+            return [list(s) for s in spans]
+        start = max(off if memo is not None else 0, size - _PMODE_SCAN)
+        if memo is not None and start > off:         # grew past the reach: old spans would bridge the unread gap
+            spans = []
+        spans, end_ok = [list(s) for s in spans], start
+        with open(fp, "rb") as f:
+            skip = False
+            if start > 0 and not (memo is not None and start == off):   # mid-file start: drop the cut first line
+                f.seek(start - 1)
+                skip = f.read(1) != b"\n"
+            f.seek(start)
+            pos, carry = start, b""
+            while pos < size:
+                chunk = f.read(min(_PMODE_CHUNK, size - pos))
+                if not chunk:
+                    break
+                pos += len(chunk)
+                parts = (carry + chunk).split(b"\n")
+                carry = parts.pop()                   # trailing partial line: read again once it is complete
+                if skip and parts:
+                    parts, skip = parts[1:], False
+                for ln in parts:
+                    hit = _pmode_line(ln)
+                    if not hit:
+                        continue
+                    if spans and spans[-1][0] == hit[0]:
+                        spans[-1][2] = max(spans[-1][2], hit[1])
+                    else:
+                        spans.append([hit[0], hit[1], hit[1]])
+                end_ok = pos - len(carry)
+    except (OSError, ValueError):
+        return []                                    # unreadable: unknown
+    spans = spans[-_PMODE_SPAN_CAP:]
+    if len(_PMODE_SPANS) > 4000:
+        _PMODE_SPANS.clear()
+    _PMODE_SPANS[fp] = (end_ok, spans)
+    return [list(s) for s in spans]
+
+
 def _human_line(d, ask_ids):
     """A record the person produced: typed prompt, `!` command or picker answer (not tool_result/meta/compact summary)."""
     # ⚠A prompt typed while the turn runs is written as a `queued_command` attachment; only `humanTurn: true`

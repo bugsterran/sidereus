@@ -289,7 +289,7 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                    "ag": [ag("general-purpose: " + t + " pass", a - (200 - 12 * i) * 60, a - (189 - 12 * i) * 60)]}
                for i, t in enumerate(("설계", "구현", "검증", "리뷰"))}
         return [{"name": "change-flow", "proj": s["cwd"], "sid": s["sid"], "cur": "검증", "end": 0,
-                 "t0": a - 100 * 60, "t1": now, "stages": st},
+                 "t0": a - 100 * 60, "t1": now, "stages": st, "pm": ["bypassPermissions"]},   # pl_runs.pl_pm shape
                 {"name": "hotfix", "proj": s["cwd"], "sid": s["sid"], "cur": "구현", "end": 0,
                  "t0": a - 40 * 60, "t1": now - 60, "stages": hot},
                 {"name": "release-check", "proj": s["cwd"], "sid": s["sid"], "cur": "리뷰", "end": a - 152 * 60,
@@ -359,7 +359,7 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                 "git": {"web": "~4", "cart": "~2", "inv": "~1"}.get(s["k"], ""), "wreck": 0,
                 **({"bgIdle": CART_BG_IDLE} if s["k"] == "cart" else {}),   # sessions.py shape: one shell quiet 25 min
                 **({"bgLong": CART_BG_LONG} if s["k"] == "cart" else {}),
-                "state": s["state"], "blocked": "", "pmode": "default", "otel": True,
+                "state": s["state"], "blocked": "", "pmode": "bypassPermissions" if s["k"] == "web" else "default", "otel": True,
                 "otelEv": "tool_result" if s["state"] in ("think", "tool") else "", "otelAt": 0,
                 "err": False, "rep": INV_REP if s["k"] == "inv" else {"n": 1, "tool": s["tool"] or "Read"}, "plat": "cc",
                 # same as term.term_attach (added in state(), not _session_row): None once done

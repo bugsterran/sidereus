@@ -236,6 +236,8 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plwp{display:flex;flex-direction:column;gap:6px;overflow:auto;font-size:12px}
 .plwp .plph small{color:var(--nx-t3,#8b95a5);font-weight:400}
 .plwst{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+/* run-period no-prompt modes (48k plPmLine); wraps, never clipped */
+.plwpm{color:#f59e0b;font-size:11.5px;overflow-wrap:anywhere}
 .plwg{display:flex;gap:8px;align-items:baseline;min-width:0}.plwg>span{flex:none;color:var(--nx-t2,#8b95a5)}.plwg>code{min-width:0;overflow-wrap:anywhere}.plwg>i{color:var(--nx-t3,#8b95a5)}
 .plwas{display:flex;flex-wrap:wrap;gap:4px}
 .plwcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:6px}   /* several running stages: cards fill the wide pane instead of hugging the left edge */

@@ -115,7 +115,13 @@ function plWatchPane(E, d, lv, lt){
   const ab = (ar ? '<div class=plwas>' + ar + '</div>' : '') + (af ? '<div class="plwas plwdn"><span class=plwal>' + esc(T('Done')) + '</span>' + af + '</div>' : '');
   const ad = n.agent ? plAgDesc(n.agent) : '';
   return '<div class="plpan plwp"><div class=plph><b>' + esc(plgShow(n.title)) + '</b><small>' + esc([n.agent, n.model, n.effort].filter(Boolean).join(' · ')) + '</small>' + (ad ? '<small class=plphd title="' + esc(ad) + '">' + esc(ad) + '</small>' : '') + '</div>' + st
-    + (ev || '<div class=hidnote>' + esc(T('No gate evidence for this stage yet')) + '</div>') + gate + ab + '</div>';
+    + (ev || '<div class=hidnote>' + esc(T('No gate evidence for this stage yet')) + '</div>') + (typeof plPmLine === 'function' ? plPmLine(lv) : '') + gate + ab + '</div>';   // guarded: tests load plWatchPane alone
+}
+// No-prompt permission modes in effect in the owning session during the run (server `pm`, pl_runs.pl_pm); absent = nothing shown.
+// ⚠Modes are session data: esc() only, never T(); a Workflow run (no lv.pr) has none.
+function plPmLine(lv){
+  const pm = lv && lv.pr && Array.isArray(lv.pr.pm) ? lv.pr.pm.filter(m => typeof m === 'string' && m) : [];
+  return pm.length ? '<div class=plwpm>' + esc(TV({msg: 'Ran without approval prompts — {m}', vars: {m: pm.join(', ')}})) + '</div>' : '';
 }
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).
 // Sizes are kept as shares of the free height (sidereus.plwv = [canvas, pane, card]) so a window resize keeps the proportions.

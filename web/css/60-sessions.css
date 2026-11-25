@@ -109,6 +109,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .splr > .splnm{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .splr > .splst{flex:none;white-space:pre}  /* ⚠inline-flex drops a flex item's leading space; pre keeps « · » apart */
 .spl.splu{color:#f59e0b;border-color:#5a4a24}
+/* «No prompts» chip (40ba sessPmChip): warning colors of .splu; shrinks to an ellipsis at 900px, never in SX_DROP */
+.spm{flex:0 5 auto;min-width:3ch;font-size:9.5px;color:#f59e0b;border:1px solid #5a4a24;border-radius:3px;padding:0 3px;margin-right:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .s-wait .sl.swait{color:#7ad4a0}
 /* Subagent silence indicator — not a verdict, only shows how quiet it has been */
 .stq{flex:0 0 auto;font-size:9.5px;color:#7e8896;border:1px solid #262e3b;border-radius:9px;padding:0 5px}

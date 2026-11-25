@@ -431,6 +431,28 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
     return out
 
 
+def _pm_in(spans, lo, hi, modes):
+    """Sorted `modes` in effect anywhere in [lo, hi]; span i holds over [first_i, first_{i+1}), the last one open-ended."""
+    got = set()
+    for i, s in enumerate(spans):
+        nxt = spans[i + 1][1] if i + 1 < len(spans) else float("inf")
+        if s[0] in modes and s[1] <= hi and nxt > lo:
+            got.add(s[0])
+    return sorted(got)
+
+
+def pl_pm(plrun, spans, now, modes):
+    """Present-only `pm` on each run ([t0, end|now]) and `past` entry ([t0, end|t1]) of row `plrun`, in place.
+    spans = parse.pmode_spans (all modes, oldest first); ⚠filter by `modes` here, never before: a dropped «default»
+    span would stretch the no-prompt span before it over a run it never covered. Mode names only (rule 1)."""
+    sp = [s for s in spans if isinstance(s, list) and len(s) == 3 and isinstance(s[0], str) and _num(s[1])]
+    for r in plrun if sp else ():
+        for x, hi in [(r, r.get("end") or now)] + [(p, p.get("end") or p.get("t1") or 0) for p in r.get("past") or ()]:
+            pm = _pm_in(sp, _num(x.get("t0")), _num(hi), modes)
+            if pm:
+                x["pm"] = pm
+
+
 def pl_act(state, perm=False, dead=False):
     """Session activity for pl_model from the row's own evidence: run | ask | perm | end | idle."""
     if dead or state in ("done", "gone"):

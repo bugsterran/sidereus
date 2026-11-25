@@ -21,7 +21,8 @@ from sidereus.otel import OTEL_TRUST_S, _otel_state
 from sidereus.projcost import _projcost_of
 from sidereus.bgtasks import _bg_open, bg_idle, bg_long
 from sidereus.notes import _note_bg_done, _note_ctx, _note_transition, _sess_state
-from sidereus.parse import _parse_transcript
+from sidereus.parse import _parse_transcript, pmode_spans
+from sidereus.live_probe import _NO_PROMPT_MODES
 from sidereus.ext import codex_env_dedupe, ext_children, ext_rollout_rows, ext_rows
 from sidereus.ext_presence import ext_presence_rows
 from sidereus import pl_runs, prefs   # module access: tests stub pl_runs._ag_by_name
@@ -256,6 +257,8 @@ def _row_children(fp, p, now, dead, act="run"):
     try:   # pipeline run model (pl_runs.pl_model); added only when present
         plrun = pl_runs.pl_model(p.get("sid") or "", fp[:-len(".jsonl")] if fp.endswith(".jsonl") else fp, sub, plm, now, act,
                          _bg_show(p.get("sub"), now, False) if dead else (), bgs)
+        if plrun:   # `pm` = no-prompt permission modes in effect during each run (Claude rows only; ext rows never)
+            pl_runs.pl_pm(plrun, pmode_spans(fp), now, _NO_PROMPT_MODES)
     except Exception as e:
         warn_once("plmodel", "Could not build the pipeline run model ({err})",
                   vars={"err": type(e).__name__}, soft=True)
