@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-25
+
+**Highlights**
+
+- Mailbox: messages and room posts sent at the same moment are written in time order, so a session's mail hook no longer skips one that landed a few milliseconds late.
+- Mailbox: a single broken character in a message or receipt file no longer hides every delivered/read mark, the whole chat, or every message on the MCP side; only that line is skipped.
+- Work log and work tabs: a slow older reply no longer paints over newer work, and a hung refresh gives up after 15 seconds instead of freezing the view for up to two minutes.
+
+### Changed
+
+- The viewer does less work on each refresh: the token widgets stop fetching while hidden, and Chat's rooms, filter tabs and participants are built only while Chat is open.
+
 ### Fixed
 
 - Tools list: a name cut short by the column width now shows in full (with «read-only» where it applies) as a tooltip on every row, not only on plugin rows.
@@ -14,7 +26,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Harness report: «Go to the next one» no longer scrolls the target row under the sticky header, and the Config map project label sits next to its title instead of mid-row.
 - Messages sent from the viewer at the same moment (for example to several sessions at once) are written in time order, so a session's mail hook no longer skips one that landed a few milliseconds late.
 - A single broken character in the mailbox receipt or message file no longer hides every delivered/read mark (or the whole chat); only that line is skipped.
-- An open work log whose refresh request hangs catches up within 15 seconds instead of staying frozen for up to two minutes.
+- An open work log no longer lets a slow older refresh paint over newer entries, and one whose refresh request hangs catches up within 15 seconds instead of staying frozen for up to two minutes.
+- Attention: a card marked read shows as read on the next refresh instead of coming back as unread until the server's cached state expired.
+- Chat: when the viewer's first refresh fails, the next one no longer appends the whole message history again or leaves the unread count at 0.
+- Chat: a post written a moment late with an earlier time still reaches the open chat instead of being skipped.
+- Chat: delivered/read marks and sender decorations are redrawn when rooms or profiles change, instead of keeping the old ones.
 - Room and chat posts sent at the same moment are written in time order too, and the mailbox MCP server no longer loses every message or receipt to a single broken character in its files.
 - Work tabs (pi and other CLIs): a slow older reply no longer paints over newer work, and a hung request gives up after 15 seconds.
 - Pinning the Sessions column re-fits the saved column widths instead of squeezing the feed below its minimum until the window is resized.
@@ -1173,7 +1189,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/bugsterran/sidereus/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/bugsterran/sidereus/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/bugsterran/sidereus/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/bugsterran/sidereus/compare/v0.19.0...v0.20.0
