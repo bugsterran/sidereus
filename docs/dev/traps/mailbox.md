@@ -4,6 +4,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Mailbox and chat
 
+- **The viewer's «Clear» post wrote a Hangul close tag** (`bus.CLOSE_SUBJECT` was the Korean «done» tag plus «cleanup»). Cause: the tag predates the English-source rule.
+  - ⇒ It posts `[DONE] Cleanup` with an English body. `DONE` has been in `mailbox_core.CLOSE_TAGS` and `00-core.js` `DONE` since 0.1.0, so every reader version still closes the thread. Test `test_close_post_has_no_hangul`.
+  - ⚠Never drop the Korean tags from `CLOSE_TAGS` / `DONE`: old posts, and sessions the MCP server tells to write the Korean «done» tag, still close threads with them.
 - **One non-UTF-8 byte made acks.jsonl / bus.jsonl unreadable on every poll** (`bus._read_tail`). Cause: a decode error became the read error, so nothing was cached and `ack_map` returned `AckMapError` each call — every receipt vanished until the file was edited by hand. A torn multibyte append (`ensure_ascii=False` notes) can leave such a line.
   - ⇒ Decode with `"replace"` and let the fold skip or count the line like any malformed record. Test `test_non_utf8_line_is_one_bad_record_not_a_dead_file`.
   - ⚠Do not turn a per-line decode error back into a whole-file error.

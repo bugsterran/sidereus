@@ -11,6 +11,7 @@ from tests.test_routes_post import post
 
 bus = sidereus("bus")
 RP = sidereus("routes_post")
+import mailbox_core  # noqa: E402  (on sys.path after the loader)
 
 
 def _m(t, frm, th, room=None, to=None, subject=None):
@@ -40,7 +41,14 @@ class ThreadClose(unittest.TestCase):
         self.assertEqual(out["closed"], 1)
         [m] = self.lines()
         self.assertEqual((m["room"], m["to"], m["thread"], m["from"], m["idSrc"]), ("dev", None, "plan", "me", "viewer"))
-        self.assertTrue(m["subject"].startswith("[마침]"))
+        self.assertTrue(m["subject"].startswith("[DONE]"))
+        self.assertTrue(mailbox_core.thread_state(self.rows + [m])[("dev", "plan")]["closed"])
+
+    def test_close_post_has_no_hangul(self):
+        self.rows = [_m(1, "a", "t", room="dev")]
+        bus.thread_close({"thread": "t"}, "me")
+        [m] = self.lines()
+        self.assertFalse(any("가" <= c <= "힣" for c in m["subject"] + m["body"]))
 
     def test_dm_thread_keeps_recipient(self):
         self.rows = [_m(1, "a", "t", to="b"), _m(2, "b", "t", to="a")]

@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Mailbox: «Clear» on a stale thread now posts `[DONE] Cleanup` with an English body instead of a Korean tag. Every released version already reads `DONE` as closed; posts with the Korean tag still close threads.
+
 ## [0.23.0] - 2026-11-25
 
 **Highlights**

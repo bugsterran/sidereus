@@ -92,13 +92,13 @@ function buildTodo(){
     ? stale.map(x => '<span class=tdth data-th="' + esc(x.th) + '" title="' + T('Last post: ') + esc(x.last) + '">' + esc(x.th)
         + ' <i>' + TV({msg: '{n} posts · quiet {t}', vars: {n: x.n, t: x.idleH >= 48 ? U(Math.round(x.idleH / 24), 'd') : U(Math.round(x.idleH), 'h')}}) + '</i>'
         + (x.turn.length ? '<u>→ ' + TV({msg: "{n}'s turn", vars: {n: esc(x.turn.join(', '))}}) + '</u>' : '')
-        + '<button type=button class=tdcl data-cl="' + esc(x.th) + '" title="' + esc(T('Posts a {t} note that closes this thread').replace('{t}', '[마침]')) + '">'
+        + '<button type=button class=tdcl data-cl="' + esc(x.th) + '" title="' + esc(T('Posts a {t} note that closes this thread').replace('{t}', '[DONE]')) + '">'
         + esc(T('Clear', 'tidy')) + '</button></span>').join('')
       + (typeof todoAsk === 'string'
-          ? '<span class=tdq><b>' + esc(todoAsk) + '</b>: ' + esc(T('Posts a {t} note that closes this thread').replace('{t}', '«[마침] 정리»'))
+          ? '<span class=tdq><b>' + esc(todoAsk) + '</b>: ' + esc(T('Posts a {t} note that closes this thread').replace('{t}', '«[DONE] Cleanup»'))
             + ' <button type=button data-q=ok>' + esc(T('Clear', 'tidy')) + '</button><button type=button data-q=no>' + esc(T('Cancel')) + '</button></span>'
         : todoAsk
-          ? '<span class=tdq>' + esc(TV({msg: 'Close {n} threads with a {t} note?', vars: {n: stale.length, t: '[마침]'}}))
+          ? '<span class=tdq>' + esc(TV({msg: 'Close {n} threads with a {t} note?', vars: {n: stale.length, t: '[DONE]'}}))
             + ' <button type=button data-q=ok>' + esc(T('Clear all')) + '</button><button type=button data-q=no>' + esc(T('Cancel')) + '</button></span>'
           : (stale.length > 1 ? '<button type=button class=tdall>' + esc(T('Clear all')) + ' ' + stale.length + '</button>' : ''))
       + (stale.dead ? '<span class=tdnote title="' + esc(TV({msg: 'Quiet for over {n} days counts as a finished discussion, not a stale one (just missing the {t} tag)', vars: {n: DEAD_D, t: '[마침]'}})) + '">'

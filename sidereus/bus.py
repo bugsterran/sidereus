@@ -451,7 +451,8 @@ def dm_send(req, me):
 
 
 THREAD_MAX = 200           # thread names are short labels; anything longer is not a real key
-CLOSE_SUBJECT = "[마침] 정리"
+CLOSE_SUBJECT = "[DONE] Cleanup"   # DONE is in mailbox_core.CLOSE_TAGS and 00-core.js DONE since 0.1.0, so every reader version closes on it
+CLOSE_BODY = "Closed from the viewer as a stale thread."
 
 
 def thread_close(req, me):
@@ -476,6 +477,6 @@ def thread_close(req, me):
         mid = uuid.uuid4().hex[:8]
         _bus_append({"id": mid, "t": time.time_ns(), "from": me, "idSrc": "viewer",
                      "to": (None if to in (None, "None") else to), "room": None if dm else room,
-                     "subject": CLOSE_SUBJECT, "thread": th, "body": "뷰어에서 방치 스레드를 정리했습니다."})
+                     "subject": CLOSE_SUBJECT, "thread": th, "body": CLOSE_BODY})
         ids.append(mid)
     return {"ok": True, "ids": ids, "closed": len(ids)}
