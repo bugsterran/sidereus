@@ -50,6 +50,7 @@ function sesdrReveal(attn){ if(!SESPIN && !SESOPEN){ sesdrOpen(true, false); ses
 function sesdrPin(on, keepOpen){
   SESPIN = !!on; if(!SESPIN) SESOPEN = !!keepOpen;
   sesdrSave(); sesdrApply();
+  if(SESPIN && typeof wrFit === 'function') wrFit();   // ⚠boot fit ran with the drawer unpinned (no column): a stored width crammed #feed
 }
 function sesdrBadge(){
   // sesCount (below): the number is open sessions, breakdown in the title.

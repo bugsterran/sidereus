@@ -4,10 +4,10 @@ import json
 import time
 import uuid
 
-from sidereus.config import BUS_PATH, ROOM_DEFAULT, VIEWER_ME
+from sidereus.config import ROOM_DEFAULT, VIEWER_ME
 from sidereus import config as _cfg
 from sidereus.warn import WARN_MUTE_S, _SOFT, _WARN_LOG, _warn_lock, _warned, _wmute, warn_once
-from sidereus.bus import _open_append, dm_send, dm_target_error, thread_close
+from sidereus.bus import _bus_append, dm_send, dm_target_error, thread_close
 from sidereus.live import _parse_cache, _parse_lock
 from sidereus.cards import mark_cards_read, set_cards_read
 from sidereus.otel import _otel_ingest, _otel_lock, _otel_stat
@@ -255,8 +255,7 @@ class _PostRoutes:
         if rt:
             msg["replyTo"] = rt
         try:
-            with _open_append(BUS_PATH) as f:
-                f.write(json.dumps(msg, ensure_ascii=False) + "\n")
+            _bus_append(msg)   # ⚠one lock re-stamps t: a direct append let concurrent says land out of t order
         except Exception as e:
             return self._send(500, json.dumps({"error": f"Could not write: {e}"}), "application/json; charset=utf-8")
         state_cache_clear()   # the client polls right after a write; a 1 s cached state would hide it

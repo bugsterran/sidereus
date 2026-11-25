@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Messages sent from the viewer at the same moment (for example to several sessions at once) are written in time order, so a session's mail hook no longer skips one that landed a few milliseconds late.
 - A single broken character in the mailbox receipt or message file no longer hides every delivered/read mark (or the whole chat); only that line is skipped.
 - An open work log whose refresh request hangs catches up within 15 seconds instead of staying frozen for up to two minutes.
+- Room and chat posts sent at the same moment are written in time order too, and the mailbox MCP server no longer loses every message or receipt to a single broken character in its files.
+- Work tabs (pi and other CLIs): a slow older reply no longer paints over newer work, and a hung request gives up after 15 seconds.
+- Pinning the Sessions column re-fits the saved column widths instead of squeezing the feed below its minimum until the window is resized.
+- Structure: the sticky toolbar over the map now spans its full width, so the diagram no longer shows through an 8px strip on the right.
 
 ## [0.22.0] - 2026-11-21
 

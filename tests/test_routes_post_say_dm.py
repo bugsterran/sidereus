@@ -36,7 +36,7 @@ class SayTest(_Base):
     def setUp(self):
         super().setUp()
         self.busf = os.path.join(self.tmp, "bus.jsonl")
-        self.patch(RP, "BUS_PATH", self.busf)
+        self.patch(bus, "BUS", self.busf)
         self.patch(RP, "VIEWER_ME", "me")
         # room existence (room_check.say_room): r1 exists, «home» is the default room
         self.patch(RP, "ROOM_DEFAULT", "home")
@@ -134,10 +134,17 @@ class SayTest(_Base):
     def test_write_failure_is_500(self):
         def boom(path):
             raise OSError("disk full")
-        self.patch(RP, "_open_append", boom)
+        self.patch(bus, "_open_append", boom)
         code, out, _ = post("/api/say", {"body": "hi", "room": "r1"})
         self.assertEqual(code, 500)
         self.assertIn("disk full", out["error"])
+
+    def test_say_goes_through_the_bus_append_lock(self):
+        # A direct append stamped t outside bus._append_lock: concurrent says landed out of t order (48/210 measured).
+        self.patch(bus, "_last_append_t", 10 ** 30)
+        self.assertEqual(post("/api/say", {"body": "hi", "room": "r1"})[0], 200)
+        (m,) = self._lines()
+        self.assertEqual(m["t"], 10 ** 30 + 1)
 
     def test_non_string_fields_are_400(self):
         # .strip() on a number used to raise out of do_POST with no response.

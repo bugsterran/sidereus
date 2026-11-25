@@ -199,6 +199,8 @@ class BusIncremental(unittest.TestCase):
         self.assertEqual([m["id"] for m in bus.messages(0)], ["a", "b", "d"])
         self.assertEqual(bus._cached(self.bus_path, bus._bus_parse)[1], 1)          # the torn line is counted
         self.assertIn(self.acks_path, bus._parse_cache)                              # cached, not re-read every poll
+        self.assertEqual(mailbox_core.acks()["m1"]["delivered"], ["bob"])           # MCP side: one bad byte no longer empties it
+        self.assertEqual([m["id"] for m in mailbox_core.rows(self.bus_path)], ["a", "b", "d"])
 
     def test_truncation_and_rewrite_fall_back_to_full(self):
         self.raw(self.bus_path, "".join(json.dumps({"id": "m%d" % i, "t": i}) + "\n" for i in range(1, 6)), "w")

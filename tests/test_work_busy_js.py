@@ -23,6 +23,7 @@ const TIMERS = [];
 function setTimeout(f, ms){ WAITS.push(ms); TIMERS.push(f); return 0; }
 let wtData = {}, agentData = null, wtFocus = 'k';
 const wtBusy = new Set();
+const wtSeq = {};
 function workUrl(cwd, tid){ return '/api/session/work?cwd=' + cwd; }
 function wtKeyOf(x){ return x; }
 function wtShown(){ return ['k']; }

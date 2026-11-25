@@ -70,7 +70,7 @@ function mpParse(txt, dflt){
 // Client copy of the server validators (sidereus/prefs.py, sidereus/cc_settings.py), checked before the confirm.
 //   ⚠Keep in step with PORT_MIN/MAX, WIN_MIN/MAX, _v_name, _v_dir.
 //   One rule for numbers: out of range is refused here, never clamped, so the preview is exactly what is typed.
-//   The server still clamps autoCompactWindow, but only as a backstop for API callers.
+//   The server refuses out-of-range values the same way (cc_settings._v_win), it never clamps.
 const MP_RULE = {port: {min: 1024, max: 65535}, cc_compact_window: {min: 50000, max: 1000000},
   viewer_me: {name: 1}, default_room: {name: 1}, saver_hook_dir: {dir: 1}};
 // [true, value] or [false, message]

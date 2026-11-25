@@ -7,12 +7,14 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **One non-UTF-8 byte made acks.jsonl / bus.jsonl unreadable on every poll** (`bus._read_tail`). Cause: a decode error became the read error, so nothing was cached and `ack_map` returned `AckMapError` each call — every receipt vanished until the file was edited by hand. A torn multibyte append (`ensure_ascii=False` notes) can leave such a line.
   - ⇒ Decode with `"replace"` and let the fold skip or count the line like any malformed record. Test `test_non_utf8_line_is_one_bad_record_not_a_dead_file`.
   - ⚠Do not turn a per-line decode error back into a whole-file error.
+  - ⚠The MCP side reads the same files: `mailbox_core.rows`/`acks` open with `errors="replace"` too (strict decode returned 0 rows / 0 receipts).
 - **A post appended late was never polled** (`bus.messages(since)`). Cause: writers stamp `t` before their O_APPEND, so with several writer processes an earlier-stamped post can land after a poll moved `since` past a later one.
   - ⇒ A poll (`since > 0`) re-serves `MSG_SLACK_NS` (5 s); the page dedups by id (`95-poll.js` MSEEN). `messages_range` passes slack 0. Test `BusSlack`.
   - ⚠Do not drop the client id dedup or widen the slack — every poll re-sends the bodies inside it.
 - **Viewer posts landed out of `t` order** (★4 of 2198 bus lines, all idSrc=viewer, gap up to 12 ms). Cause: `ThreadingHTTPServer` request threads stamp `t`, then race to append; a `t > seen` reader (Stop hook, watch_bus, monitor_stream) skips the late line.
   - ⇒ `bus._bus_append` re-stamps `t` under one lock, strictly increasing (`max(time_ns, last + 1)`). Test `BusAppendOrder`.
   - ⚠Keep the `+ 1`: time_ns() is µs-granular on macOS and an equal `t` is skipped the same way. The lock covers this process only (0 inversions measured from the MCP server).
+  - ⚠Every viewer bus write goes through `_bus_append`. ★`/api/say` appended directly: 48 of 210 concurrent posts out of `t` order. Test `test_say_goes_through_the_bus_append_lock`.
 - **bus.jsonl / acks.jsonl re-parsed in full on every append** (★bus 3.9 MB = 15.6 ms, acks 1.46 MB = 18.8 ms). ⇒ `bus._cached` folds only complete lines after the cached offset (same inode, larger size, unchanged 64 bytes before it); else a full parse.
   - ⚠Consume only up to the last newline (a writer mid-append) and never mutate a cached value in place (readers iterate it unlocked).
   - ⚠The ack merge rule lives only in `mailbox_core.ack_fold` (`acks()` and `bus._ack_fold` call it; `own=set()` copies a cached entry before changing it). A malformed record is skipped, never a stop (`test_ack_fold_matches_mailbox_core_and_keeps_old_value`).

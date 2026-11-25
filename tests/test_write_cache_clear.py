@@ -26,13 +26,13 @@ class _Base(unittest.TestCase):
 
 class CacheClearTest(_Base):
     def test_say(self):
-        self.patch(RP, "BUS_PATH", os.path.join(self.tmp, "bus.jsonl"))
+        self.patch(sidereus("bus"), "BUS", os.path.join(self.tmp, "bus.jsonl"))
         self.patch(RP.room_check, "say_room", lambda r, d: (r, ""))
         code, _, _ = post("/api/say", {"body": "hi", "room": "r1"})
         self.assertEqual((code, len(self.cleared)), (200, 1))
 
     def test_say_failed_write_keeps_cache(self):
-        self.patch(RP, "BUS_PATH", os.path.join(self.tmp, "no", "bus.jsonl"))
+        self.patch(sidereus("bus"), "BUS", os.path.join(self.tmp, "no", "bus.jsonl"))
         self.patch(RP.room_check, "say_room", lambda r, d: (r, ""))
         code, _, _ = post("/api/say", {"body": "hi", "room": "r1"})
         self.assertEqual((code, self.cleared), (500, []))

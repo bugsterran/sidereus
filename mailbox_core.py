@@ -75,7 +75,8 @@ if not SELF and mailbox_config.FILE_OK:
 
 def rows(path=None):
     try:
-        with open(path or BUS, encoding="utf-8") as f:
+        # ⚠errors="replace": a strict decode raised out of the loop and one bad byte returned no rows at all
+        with open(path or BUS, encoding="utf-8", errors="replace") as f:
             out = []
             bad = 0
             for line in f:
@@ -274,7 +275,7 @@ def acks():
     """message id → {"delivered": [who…], "ack": [{who, at, note}…], "t": last record (ns)}"""
     out = {}
     try:
-        with open(ACKS, encoding="utf-8") as f:
+        with open(ACKS, encoding="utf-8", errors="replace") as f:   # ⚠strict decode = one bad byte empties every receipt
             ack_fold(out, f)
     except FileNotFoundError:
         pass

@@ -71,7 +71,7 @@ class SayAuthor(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="sidereus-vme-")
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.busf = os.path.join(self.tmp, "bus.jsonl")
-        for obj, k, v in ((RP, "BUS_PATH", self.busf), (RP, "ROOM_DEFAULT", "home"),
+        for obj, k, v in ((sidereus("bus"), "BUS", self.busf), (RP, "ROOM_DEFAULT", "home"),
                           (RC, "_room_known", lambda r: r == "r1")):
             p = mock.patch.object(obj, k, v)
             p.start()

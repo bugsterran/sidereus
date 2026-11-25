@@ -259,19 +259,21 @@ function wtActivate(key){
 // ⚠Only 503 is retried here — 403 is a real refusal and must surface at once.
 function workGetJSON(url, onBusy, n){
   n = n || 0;
-  return getJSON(url).catch(e => {
+  return getJSON(url, {timeout: 15000}).catch(e => {   // ⚠the 120 s default left a hung request painting late over newer data
     if(!(e && e.status === 503) || n >= 4) throw e;
     if(onBusy) onBusy();
     return new Promise(res => setTimeout(res, 2000 * Math.pow(2, n))).then(() => workGetJSON(url, onBusy, n + 1));
   });
 }
 const wtBusy = new Set();   // tab keys inside a 503 backoff chain — polls and clicks must not start a second one
+const wtSeq = {};           // tab key -> latest request number: a slow older reply must not paint over a newer one
 function wtFetch(t, retry){
   // ★Do **not swallow** failures. Before it was `.catch(()=>{})`, so when a request broke the tab stayed on
   // «Loading…» forever with no progress shown.
   // The screen must state the reason so the user can decide whether to click again.
   if(!t || wtBusy.has(t.key)) return;
   const url = workUrl(t.cwd, t.tid);
+  const want = wtSeq[t.key] = (wtSeq[t.key] || 0) + 1;
   workGetJSON(url, () => {
     wtBusy.add(t.key);
     if(wtData[t.key] && wtData[t.key].ok !== false) return;   // keep showing data already received
@@ -281,6 +283,7 @@ function wtFetch(t, retry){
   })
     .then(j => {
       wtBusy.delete(t.key);
+      if(want !== wtSeq[t.key]) return;
       // Even when the server returns a failure with a reason, ask once more (the allow list may be fluctuating)
       if(j && j.ok === false && !retry){ return setTimeout(() => wtFetch(t, 1), 900); }
       wtData[t.key] = j;
@@ -290,6 +293,7 @@ function wtFetch(t, retry){
     })
     .catch(e => {
       wtBusy.delete(t.key);
+      if(want !== wtSeq[t.key]) return;
       // ★Retry once silently (2026-09-02: work history occasionally failed to load).
       // If the server is heavy at that moment (ps delay, large transcript parse) it bounces once and succeeds next time.
       if(!retry && !(e && e.status === 503)){ return setTimeout(() => wtFetch(t, 1), 900); }   // 503 already backed off

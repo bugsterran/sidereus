@@ -8,7 +8,7 @@
 .archmap{cursor:grab}.archmap .archtop,.archmap .archbar{cursor:auto}.archmap.archpan,.archmap.archpan *{cursor:grabbing!important;user-select:none}   /* 84j drag-to-pan */
 /* ⚠.archmap is the scroller and .mmdv does not clip, so the bordered .mmd must grow with a wide SVG or nodes sit past its border */
 /* ⚠bar, notice and legend stay in view on a wide map: sticky at the scroller's top-left, opaque over the diagram */
-.archtop{position:sticky;top:-6px;left:-4px;z-index:2;background:var(--nx-bg,#0d1014)}
+.archtop{position:sticky;top:-6px;left:-4px;margin:0 -4px;padding:0 4px;z-index:2;background:var(--nx-bg,#0d1014)}   /* ⚠margin spans .archmap's 4px side padding: left:-4px alone left an 8px strip where the diagram showed through */
 .archmap{--archtop-h:96px;scroll-padding-top:var(--archtop-h)}   /* ⚠focus scroll ignores sticky .archtop (one row = 87px at 900/1100/1440): without this, Tab lands on «Source text» hidden under it */
 .archdg .mmd{width:max-content;min-width:100%;box-sizing:border-box}
 .archdg .mmdtg{position:sticky;right:10px}   /* «Source text» stays at the visible right edge of the wider box */
