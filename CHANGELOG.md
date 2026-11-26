@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Sessions: when `claude agents --json` is slow, rows keep the last session identity as long as no session file changed, instead of falling back to the less reliable command-line guess after 90 s.
+- Sessions and Timeline: in time zones with daylight saving time, Claude Code transcript times are no longer one hour off (summer or winter, depending on the zone), so waits, idle times and timeline bars line up with the clock.
 - Pi: a session no longer disappears from every list once its session file grows past 64 MB, and each poll reads only the lines appended since the last one instead of the whole file.
 
 ## [0.23.0] - 2026-11-25

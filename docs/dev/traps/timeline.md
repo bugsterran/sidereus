@@ -4,6 +4,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Timeline
 
+- ★**Transcript UTC stamps were one hour off in DST zones** (2026-11-26). Cause: `transcript._TZ_OFF` used `time.daylight` (the zone *has* DST) as «DST in effect», and was fixed at import. ⇒ `transcript.utc_s` parses with `tzinfo=timezone.utc`; `_line_ts`, `_fast_ts` and `perm_marks._iso_s` all go through it (`tests/test_utc_ts_dst.py`, four zones via `time.tzset`). ⚠Never add a local offset to a UTC stamp by hand.
 - ★**Connected sessions idle past the window vanished from the Timeline** (2026-10-21, 1-hour window: Codex 01a15274 idle ~4 h had no row).
   - Cause: the keep rule for connected sessions lived only in the browser (`sessShown`), which can only keep groups the server sent; the server dropped live sessions idle past the window by mtime / in-window activity.
   - ⇒ the server emits an empty-segs row for every live sid (`timeline.py` `_tl_pick`/`_tl_sess_row`, `timeline_ext.py` `_ext_sess`/`_ext_tl`; test `tests/test_timeline_idle_live.py`).

@@ -2,8 +2,7 @@
 import json
 import os
 import re
-import time
-from datetime import datetime
+from datetime import datetime, timezone
 from sidereus.config import claude_home
 
 
@@ -378,13 +377,16 @@ def _line_ts(d, fallback):
     if not ts:
         return fallback
     try:
-        return datetime.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S").timestamp() + _TZ_OFF
+        return utc_s(ts)
     except (TypeError, ValueError, OverflowError, OSError):
         return fallback         # non-string or garbled timestamp: caller's fallback, never `now`
 
 
-# transcript timestamps are UTC — convert to local (otherwise they look 9 hours old and all expire)
-_TZ_OFF = -time.timezone if time.daylight == 0 else -time.altzone
+def utc_s(ts):
+    """Epoch seconds of the first 19 chars of a transcript timestamp, read as UTC (raises on garbage).
+    ⚠Never add a fixed local offset: `time.daylight` only says the zone *has* DST, not that it is in effect, and a
+      value taken at import goes stale across a DST change — either way stamps in a DST zone were off by one hour."""
+    return datetime.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
 
 
 _CONT_KEY = '"continuedInSessionId"'

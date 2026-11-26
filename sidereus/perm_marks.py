@@ -3,10 +3,9 @@ import json
 import os
 import re
 import time
-from datetime import datetime
 from sidereus.config import DATA_DIR
 from sidereus.live_probe import _UUID_RE, _sid_transcript, shell_after, tool_busy
-from sidereus.transcript import _TZ_OFF, _tail_lines
+from sidereus.transcript import _tail_lines, utc_s
 
 
 # Permission-prompt markers from hooks/perm_mark.py (Notification permission_prompt): {sid, t} only.
@@ -55,7 +54,7 @@ _pend_cache = {}      # transcript path -> ((mtime, size), {tool name: oldest un
 def _iso_s(ts):
     """Epoch seconds (with fraction) of a transcript UTC timestamp, else 0."""
     try:
-        base = datetime.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S").timestamp() + _TZ_OFF
+        base = utc_s(ts)
     except (TypeError, ValueError, OverflowError, OSError):
         return 0
     m = re.match(r"\.(\d+)", ts[19:])
