@@ -131,6 +131,14 @@ function plRunPick(nav, pin){
   return (nav ? '<button class="plrv' + (old ? ' old' : '') + '" data-plrv aria-haspopup=menu>' + esc(lab + ' ▾') + '</button>' : '')
     + (old || pin ? '<button class=plrv data-plrvb>' + esc(T('Back to current')) + '</button>' : '');
 }
+// «Back to current»: drop the pick; after a pin, mark the «Working now» row of the live run now shown (the pin had cleared or moved it).
+function plBackCur(){
+  const s = PLS.runSel;
+  PLS.runSel = null;
+  if(!(s && s.pin)) return;
+  const lv = plLiveRun(PLS.proj, s.name);
+  PLS.nowSid = lv && plNowLive(SESS).some(x => x.sid === lv.sid) ? lv.sid : '';
+}
 let PLRV = false;   // run menu open
 function plRvClose(){ const el = document.getElementById('plrvm'); if(el) el.remove(); PLRV = false; }
 function plRvOpen(rc){
@@ -156,7 +164,7 @@ document.addEventListener('pointerdown', e => { if(PLRV && !(e.target.closest &&
 document.addEventListener('click', e => {
   const t = e.target.closest ? e.target : null;
   if(!t) return;
-  if(t.closest('[data-plrvb]')){ PLS.runSel = null; plRvClose(); plPaint(); return; }
+  if(t.closest('[data-plrvb]')){ plBackCur(); plRvClose(); plPaint(); return; }
   const b = t.closest('[data-plrv]');
   if(b){ if(PLRV) plRvClose(); else plRvOpen(b.getBoundingClientRect()); return; }
   const m = PLRV && t.closest('[data-plrvi]');

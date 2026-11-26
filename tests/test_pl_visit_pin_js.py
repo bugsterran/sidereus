@@ -18,7 +18,7 @@ SESS = [{"sid": X, "cwd": "/x/api", "state": "done", "plrun": [X_RUN]}, {"sid": 
 HEAD = {"k": "run", "sid": X, "name": "p", "proj": "/x/api", "rid": N - 3000, "cur": N - 3000, "past": False}
 PAST = dict(HEAD, rid=N - 5000, past=True)
 FNS = ("visitGo", "plViewRun", "plPinRun", "plPastLv", "plRunNav", "plRunLab", "plRunPick", "plLiveHead", "plRvPick", "plRvClose",
-       "plLiveRun", "plProjSess", "plMem", "plRunName", "plSubsOf", "plOvSid", "plNowLive") + MODEL
+       "plLiveRun", "plProjSess", "plMem", "plRunName", "plSubsOf", "plOvSid", "plNowLive", "plBackCur") + MODEL
 
 
 def run(body):
@@ -52,6 +52,20 @@ class VisitPinsEndedSessionRun(unittest.TestCase):
                 " visitGo(%s); SESS = SESS.filter(x => x.sid !== '%s'); const b = plViewRun('/x/api', 'p');"
                 " return [a.sid, b.sid, PLS.runSel];" % (json.dumps(HEAD), json.dumps(PAST), X))
         self.assertEqual(r, [Y, Y, None])
+
+    def test_working_now_mark_follows_the_pin(self):
+        # Ended X pinned: no «Working now» row (plOvSid picked live Y, whose run the canvas does not show).
+        # «Back to current» shows Y's live run again, so Y's row is marked.
+        r = run("visitGo(%s); const a = PLS.nowSid; plBackCur(); return [a, PLS.nowSid, PLS.runSel];" % json.dumps(HEAD))
+        self.assertEqual(r, ["", Y, None])
+
+    def test_working_now_mark_on_a_live_pinned_session(self):
+        r = run("SESS[0].state = 'run'; visitGo(%s); return [PLS.nowSid, plViewRun('/x/api', 'p').sid];" % json.dumps(HEAD))
+        self.assertEqual(r, [X, X])
+
+    def test_back_from_a_menu_pick_keeps_the_mark(self):
+        r = run("PLS.nowSid = 'kept'; PLS.runSel = {sid: '%s', name: 'p', rid: 1, cur: 2}; plBackCur(); return [PLS.nowSid, PLS.runSel];" % Y)
+        self.assertEqual(r, ["kept", None])
 
     def test_pin_kept_while_reload_loads(self):
         r = run("visitGo(%s); SESS = []; plViewRun('/x/api', 'p'); return PLS.runSel && PLS.runSel.rid;" % json.dumps(HEAD))
