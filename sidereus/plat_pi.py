@@ -27,7 +27,8 @@ PLAT = "pi"              # hook `platform` value
 KEY = "pi"               # row `plat` key (same as the logo `AILG.pi`)
 NAME = "Pi"
 CHILD_LABEL = "pi -p"    # a run launched from a Claude session's Bash
-SCAN_MAX = 64 << 20      # skip session files larger than this
+SCAN_MAX = 256 << 20     # a file first seen above this is read from its last SCAN_MAX bytes (later growth: appended part)
+CHK_N = 256              # bytes before the resume offset compared on resume (an in-place rewrite -> full reparse)
 TOOLS_N = 50             # tool names kept per session (timeline label, work panel)
 HEAD_MAX = 64 << 10      # bytes read for the line-1 header alone (read_head)
 _TOOL = re.compile(r"^[A-Za-z0-9_.:-]{1,40}$")
@@ -77,73 +78,125 @@ def _tuple(u, ts, model):
             float(ts), model, usd)
 
 
-def read(path):
-    """{head, msgs, acts, tools, model} of one session file, or None when line 1 is not a `session` header."""
-    msgs, acts, tools = {}, {}, []
-    cur = ""
-    head = None
-    cut = 0.0
+def _cut(head):
+    # ⚠/clone and /fork copy the parent's entries (same ids, usage, times): count only entries after this header.
+    hts = head.get("timestamp")
+    return iso_epoch(hts) if head.get("parentSession") and isinstance(hts, str) else 0.0
+
+
+def _entry(o, s):
+    """Fold one parsed line into state `s` (msgs, acts, tools, model)."""
+    if not isinstance(o, dict):
+        return
+    typ, eid = o.get("type"), o.get("id")
+    eid = eid[:64] if isinstance(eid, str) and eid else ""
+    ets = iso_epoch(o.get("timestamp")) if isinstance(o.get("timestamp"), str) else 0.0
+    old = bool(s["cut"] and ets and ets < s["cut"])      # copied parent entry: model tracking only
+    if typ == "model_change":
+        s["model"] = _pm(o.get("provider"), o.get("modelId")) or s["model"]
+    elif typ == "message":
+        m = o.get("message")
+        if not isinstance(m, dict):
+            return
+        role = m.get("role")
+        if role not in ("user", "assistant", "toolResult"):
+            return
+        mt = m.get("timestamp")
+        ts = mt / 1000.0 if isinstance(mt, (int, float)) and not isinstance(mt, bool) and mt > 0 else ets
+        if eid and ts and not old:
+            s["acts"][eid] = float(ts)
+        if role == "assistant":
+            pm = _pm(m.get("provider"), m.get("model"))
+            s["model"] = pm or s["model"]
+            if eid and not old and isinstance(m.get("usage"), dict):
+                s["msgs"][eid] = _tuple(m["usage"], ts, pm or s["model"])
+        elif role == "toolResult":
+            nm = m.get("toolName")
+            if not old and isinstance(nm, str) and _TOOL.match(nm):
+                s["tools"].append((float(ts), nm))
+                del s["tools"][:-TOOLS_N]
+    elif typ in ("usage", "compaction", "branch_summary"):
+        if eid and not old and isinstance(o.get("usage"), dict):
+            s["msgs"]["u:" + eid] = _tuple(o["usage"], ets, _pm(o.get("provider"), o.get("model")) or s["model"])
+
+
+def _feed(f, s):
+    """Fold the complete lines from f's position into `s`; s["off"] ends after the last newline. False = line 1 is no header."""
+    off = f.tell()
+    for ln in f:
+        if not ln.endswith(b"\n"):
+            break        # ⚠an unterminated last line may be mid-write: it is taken once its newline lands
+        off += len(ln)
+        try:
+            o = json.loads(ln)
+        except ValueError:
+            o = None
+        if s["head"] is None:
+            if not isinstance(o, dict) or o.get("type") != "session":
+                return False
+            s["head"], s["cut"] = o, _cut(o)
+            continue
+        _entry(o, s)
+    s["off"] = off
+    return True
+
+
+def _chk(f, off):
+    f.seek(max(0, off - CHK_N))
+    return f.read(off - max(0, off - CHK_N))
+
+
+def _resume(path, st, prev):
+    """State of one session file: continue `prev` from its offset when the file only grew, else parse anew.
+    A file first seen above SCAN_MAX: header + its last SCAN_MAX bytes (tokens before that are not counted)."""
     try:
         with open(path, "rb") as f:
-            for ln in f:
-                try:
-                    o = json.loads(ln)
-                except ValueError:
-                    o = None
-                if head is None:
-                    if not isinstance(o, dict) or o.get("type") != "session":
+            if (prev and prev["ino"] == st.st_ino and prev["off"] <= st.st_size
+                    and _chk(f, prev["off"]) == prev["chk"]):
+                # ⚠copy, never mutate: rows handed out earlier share these dicts and may be iterated on another thread
+                s = dict(prev, msgs=dict(prev["msgs"]), acts=dict(prev["acts"]), tools=list(prev["tools"]))
+                f.seek(s["off"])
+            else:
+                s = {"head": None, "cut": 0.0, "model": "", "msgs": {}, "acts": {}, "tools": [],
+                     "off": 0, "chk": b"", "ino": st.st_ino}
+                f.seek(0)                         # ⚠the _chk probe above moved the position
+                if st.st_size > SCAN_MAX:
+                    ln = f.readline(HEAD_MAX)
+                    try:
+                        h = json.loads(ln) if ln.endswith(b"\n") else None
+                    except ValueError:
+                        h = None
+                    if not isinstance(h, dict) or h.get("type") != "session":
                         return None
-                    head = o
-                    # ⚠/clone and /fork copy the parent's entries (same ids, usage, times): count only entries after this header.
-                    hts = o.get("timestamp")
-                    cut = iso_epoch(hts) if o.get("parentSession") and isinstance(hts, str) else 0.0
-                    continue
-                if not isinstance(o, dict):
-                    continue
-                typ, eid = o.get("type"), o.get("id")
-                eid = eid[:64] if isinstance(eid, str) and eid else ""
-                ets = iso_epoch(o.get("timestamp")) if isinstance(o.get("timestamp"), str) else 0.0
-                old = bool(cut and ets and ets < cut)      # copied parent entry: model tracking only
-                if typ == "model_change":
-                    cur = _pm(o.get("provider"), o.get("modelId")) or cur
-                elif typ == "message":
-                    m = o.get("message")
-                    if not isinstance(m, dict):
-                        continue
-                    role = m.get("role")
-                    if role not in ("user", "assistant", "toolResult"):
-                        continue
-                    mt = m.get("timestamp")
-                    ts = mt / 1000.0 if isinstance(mt, (int, float)) and not isinstance(mt, bool) and mt > 0 else ets
-                    if eid and ts and not old:
-                        acts[eid] = float(ts)
-                    if role == "assistant":
-                        pm = _pm(m.get("provider"), m.get("model"))
-                        cur = pm or cur
-                        if eid and not old and isinstance(m.get("usage"), dict):
-                            msgs[eid] = _tuple(m["usage"], ts, pm or cur)
-                    elif role == "toolResult":
-                        nm = m.get("toolName")
-                        if not old and isinstance(nm, str) and _TOOL.match(nm):
-                            tools.append((float(ts), nm))
-                            del tools[:-TOOLS_N]
-                elif typ in ("usage", "compaction", "branch_summary"):
-                    if eid and not old and isinstance(o.get("usage"), dict):
-                        msgs["u:" + eid] = _tuple(o["usage"], ets, _pm(o.get("provider"), o.get("model")) or cur)
+                    s["head"], s["cut"] = h, _cut(h)
+                    f.seek(st.st_size - SCAN_MAX)
+                    f.readline()                  # skip the partial line the cut lands in
+            if not _feed(f, s):
+                return None
+            s["chk"] = _chk(f, s["off"])
     except OSError:
         return None
-    if head is None:
+    return s if s["head"] is not None else None
+
+
+def read(path):
+    """{head, msgs, acts, tools, model, ...} of one session file, or None when line 1 is not a `session` header."""
+    try:
+        st = os.stat(path)
+    except OSError:
         return None
-    return {"head": head, "msgs": msgs, "acts": acts, "tools": tools, "model": cur}
+    return _resume(path, st, None)
 
 
 def _parsed(path, st):
+    # ⚠Active pi files grow to tens of MB (★2026-11-26: 42 MB, +3 MB/day); a full reparse per append scaled with the
+    # file and the old hard SCAN_MAX skip dropped the session from every list once it crossed the cap.
     key = (st.st_size, st.st_mtime)
     with _lock:
         c = _cache.get(path)
     if c and c[0] == key:
         return c[1]
-    r = read(path)
+    r = _resume(path, st, c[1] if c else None)
     with _lock:
         _cache[path] = (key, r)
     return r
@@ -189,7 +242,7 @@ def _rows(paths, since):
             st = os.stat(p)
         except OSError:
             continue
-        if st.st_mtime < since or st.st_size > SCAN_MAX or not path_ok(p):
+        if st.st_mtime < since or not path_ok(p):
             continue
         seen.add(p)
         r = _parsed(p, st)
@@ -285,14 +338,12 @@ def one(sid):
 
 
 def session_msgs(path):
-    """Per-request tuples of one session file, or None (outside the sessions folder, unreadable, over SCAN_MAX)."""
+    """Per-request tuples of one session file, or None (outside the sessions folder, unreadable)."""
     if not path_ok(path):
         return None
     try:
         st = os.stat(path)
     except OSError:
-        return None
-    if st.st_size > SCAN_MAX:
         return None
     r = _parsed(path, st)
     return dict(r["msgs"]) if r else None

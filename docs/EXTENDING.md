@@ -19,7 +19,7 @@ Reads another CLI's local record files for tokens, model and child runs; live st
 | Name | Meaning |
 |---|---|
 | `PLAT`, `KEY`, `NAME` | hook `platform`; 2-char row key (= logo `AILG.<KEY>`, `cc` reserved); display name |
-| `CHILD_LABEL`, `SCAN_MAX` | label of a run started from Claude; bytes read per record file |
+| `CHILD_LABEL`, `SCAN_MAX` | label of a run started from Claude; size cap per record file (each adapter says what it does above it) |
 | `root()`, `path_ok(path)` | data folder; True only for a record file under it (the path comes from a hook POST) |
 | `scan(since)` | rows `{sid, path, cwd, project, start, kind, msgs, acts}` (+ `parent`, `rate`) |
 | `session_msgs(path)` | `{id: (in, out, cache, thought, ts, model, cost or None)}` or None |

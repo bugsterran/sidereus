@@ -185,9 +185,63 @@ class R4Robust(PiBase):
         link = os.path.join(self.sess, "--esc--", "2026_esc-1.jsonl")
         os.symlink(src, link)
         with mock.patch.object(pi, "SCAN_MAX", 4096):
-            self.assertEqual([r["sid"] for r in pi.scan(0.0)], [SID])
+            self.assertEqual(sorted(r["sid"] for r in pi.scan(0.0)), sorted([SID, "big-1"]))   # big: header + tail
             self.assertIsNone(pi.session_msgs(link))
             self.assertFalse(pi.path_ok(link))
+
+    def append(self, p, lines, nl=True):
+        with open(p, "a", encoding="utf-8") as f:
+            f.write("\n".join(json.dumps(x) for x in lines) + ("\n" if nl else ""))
+        st0 = os.stat(p)
+        os.utime(p, (st0.st_atime, st0.st_mtime + 1))      # ⚠same-second appends keep mtime on some filesystems
+
+    def test_append_reads_only_new_lines(self):
+        p = self.write([head(), asst("a1", 2), asst("a2", 3)])
+        self.assertEqual(set(pi.scan(0.0)[0]["msgs"]), {"a1", "a2"})
+        self.append(p, [asst("a3", 4)])
+        with mock.patch.object(pi, "_entry", wraps=pi._entry) as e:
+            r = pi.scan(0.0)[0]
+        self.assertEqual(e.call_count, 1)                   # was a full reparse: 3
+        self.assertEqual(set(r["msgs"]), {"a1", "a2", "a3"})
+
+    def test_rows_handed_out_are_not_mutated(self):
+        p = self.write([head(), asst("a1", 2)])
+        r0 = pi.scan(0.0)[0]
+        self.append(p, [asst("a2", 3)])
+        pi.scan(0.0)
+        self.assertEqual(set(r0["msgs"]), {"a1"})
+
+    def test_rewrite_in_place_reparses(self):
+        p = self.write([head(), asst("a1", 2), asst("a2", 3)])
+        pi.scan(0.0)
+        with open(p, "r+", encoding="utf-8") as f:          # same inode, earlier bytes changed, file grew
+            f.write(json.dumps(head()) + "\n" + json.dumps(asst("zz", 2)) + "\n" + json.dumps(asst("a3", 4)) + "\n"
+                    + json.dumps(asst("a4", 5)) + "\n")
+        st0 = os.stat(p)
+        os.utime(p, (st0.st_atime, st0.st_mtime + 1))
+        self.assertEqual(set(pi.scan(0.0)[0]["msgs"]), {"zz", "a3", "a4"})
+
+    def test_unterminated_line_waits_for_newline(self):
+        p = self.write([head(), asst("a1", 2)])
+        self.append(p, [asst("a2", 3)], nl=False)
+        self.assertEqual(set(pi.scan(0.0)[0]["msgs"]), {"a1"})
+        with open(p, "a", encoding="utf-8") as f:
+            f.write("\n")
+        st0 = os.stat(p)
+        os.utime(p, (st0.st_atime, st0.st_mtime + 1))
+        self.assertEqual(set(pi.scan(0.0)[0]["msgs"]), {"a1", "a2"})
+
+    def test_over_cap_keeps_row_from_header_and_tail(self):
+        p = self.write([head(cwd="/w/big")] + [asst("a%d" % i, i) for i in range(40)])
+        with mock.patch.object(pi, "SCAN_MAX", 2048):
+            r = pi.scan(0.0)[0]
+            self.assertEqual((r["sid"], r["cwd"]), (SID, "/w/big"))
+            self.assertTrue(0 < len(r["msgs"]) < 40)
+            self.assertIn("a39", r["msgs"])
+            self.assertEqual(set(pi.session_msgs(p)), set(r["msgs"]))
+            self.append(p, [asst("b1", 50)])               # later growth: appended part only, tail kept
+            r2 = pi.scan(0.0)[0]
+            self.assertEqual(set(r2["msgs"]), set(r["msgs"]) | {"b1"})
 
     def test_r4_symlinked_root_still_reads(self):
         self.write([head(), asst("a1", 2)])

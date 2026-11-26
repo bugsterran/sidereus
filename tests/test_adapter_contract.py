@@ -96,9 +96,14 @@ class AdapterContract(unittest.TestCase):
             with self.subTest(adapter=m.KEY), _Home(m) as h, mock.patch.object(ad, "warn_once") as w:
                 rows, live = self._rows(m, h)
                 w.assert_not_called()                       # no exception, within the time budget
-                self.assertEqual(len(rows), 1)
-                self.assertNotIn(h.big, [r["path"] for r in rows])     # over SCAN_MAX: skipped
+                tails = m.KEY == "pi"       # pi keeps a big file's row: header + its last SCAN_MAX bytes
+                self.assertEqual(len(rows), 2 if tails else 1)
+                self.assertEqual(h.big in [r["path"] for r in rows], tails)     # others: over SCAN_MAX is skipped
                 for r in rows:
+                    if r["path"] == h.big:
+                        self.assertEqual(r["cwd"], "/tmp/demo-proj")  # nosec B108 -- fixture value, not a disk path
+                        continue                    # its tail is noise only: no msgs
+
                     for k in ad.AD_ROW_KEYS:
                         self.assertIn(k, r)
                     self.assertEqual(r["cwd"], "/tmp/demo-proj")  # nosec B108 -- fixture value, not a disk path
@@ -111,8 +116,8 @@ class AdapterContract(unittest.TestCase):
                     for t in r["acts"].values():
                         self.assertIsInstance(t, float)
                 self.assertTrue(live[0])
-                if m.KEY in ("cx", "pi"):
-                    self.assertIsNone(live[-1])     # codex/pi refuse big files; gemini tails them (TAIL_READ)
+                if m.KEY == "cx":
+                    self.assertIsNone(live[-1])     # codex refuses big files; gemini (TAIL_READ) and pi tail them
                 self.assertNotIn(CANARY, json.dumps(rows, default=str))
                 self.assertNotIn(CANARY, json.dumps(live, default=str))
 
@@ -130,7 +135,8 @@ class AdapterContract(unittest.TestCase):
                 self.assertTrue(rows)
                 sess = [v1._session({"sid": r["sid"], "id": r["sid"][:8], "plat": m.KEY, "project": r["project"],
                                      "cwd": r["cwd"], "kind": r["kind"], "state": "done",
-                                     "model": max(r["msgs"].values(), key=lambda v: v[4])[5]}) for r in rows]
+                                     "model": max(r["msgs"].values(), key=lambda v: v[4],
+                                                  default=(0, 0, 0, 0, 0, ""))[5]}) for r in rows]
                 obj = {"schema": "sidereus-state", "version": 1, "at": 0, "x": {}, "sessions": sess}
                 self.assertEqual(validate(obj, schema), [])
                 self.assertTrue(validate(dict(obj, sessions=[dict(sess[0], extra=1)]), schema))   # closed object

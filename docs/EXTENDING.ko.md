@@ -19,7 +19,7 @@
 | 이름 | 뜻 |
 |---|---|
 | `PLAT`, `KEY`, `NAME` | 훅의 `platform`, 두 글자 행 키(= 로고 `AILG.<KEY>`, `cc` 예약), 표시 이름 |
-| `CHILD_LABEL`, `SCAN_MAX` | Claude 에서 띄운 실행의 라벨, 기록 파일마다 읽을 바이트 |
+| `CHILD_LABEL`, `SCAN_MAX` | Claude 에서 띄운 실행의 라벨, 기록 파일 크기 상한(넘을 때 동작은 어댑터마다 다름) |
 | `root()`, `path_ok(path)` | 데이터 폴더, 그 아래 기록 파일일 때만 True(경로가 훅 POST 로 들어온다) |
 | `scan(since)` | 행 `{sid, path, cwd, project, start, kind, msgs, acts}`(+ `parent`, `rate`) |
 | `session_msgs(path)` | `{id: (in, out, cache, thought, ts, model, cost 또는 None)}` 또는 None |

@@ -387,3 +387,9 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: `_load_disk` drops `toolidx-cache.json` when its version differs, so the first start after the bump re-reads 90 days of transcripts (★10-03: 4.64 GB · 3,970 files · 21.6 s).
 - ⇒ The rescan runs once in the background; «Tools»/«Harness»/«Session tools» show scanning until it ends, later starts load the cache.
 - ⚠Bump only when the stored event shape changes (v6: `mcpauth:` keys); a stale cache otherwise serves old keys silently.
+
+## A pi session vanished once its file crossed 64 MB (`sidereus/plat_pi.py` `_resume` · `SCAN_MAX`)
+- Cause: `_rows` skipped files over `SCAN_MAX` (64 MB) and every append re-parsed the whole file (★11-26: active file 42 MB, +3 MB/day, 0.13 s per reparse).
+- ⇒ The cache keeps a resume state (offset, inode, the 256 bytes before the offset): a file that only grew is read from the offset; a changed inode or prefix re-parses it. A file first seen above `SCAN_MAX` (now 256 MB) keeps its row from the header + its last `SCAN_MAX` bytes.
+- ⚠Never mutate the cached state on resume: rows handed out share its dicts and may be iterated on another thread.
+- ⚠An unterminated last line is taken only once its newline lands (it may be mid-write). `tests/test_plat_pi.py` `test_append_reads_only_new_lines` · `test_over_cap_keeps_row_from_header_and_tail`.
