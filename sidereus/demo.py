@@ -288,12 +288,20 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
         rel = {t: {"o": "done", "n": 1, "t0": a - (200 - 12 * i) * 60, "t1": a - (189 - 12 * i) * 60, "from": {},
                    "ag": [ag("general-purpose: " + t + " pass", a - (200 - 12 * i) * 60, a - (189 - 12 * i) * 60)]}
                for i, t in enumerate(("설계", "구현", "검증", "리뷰"))}
+        rel["리뷰"]["cm"] = [a - 153 * 60]   # commit after «Verify» passed: «Since your last visit» counts it
+        # Earlier release-check (pl_model `past` shape) failed at «Verify» inside the visitDemo window; rid = its own t0.
+        bad = {t: {"o": o, "n": 1, "t0": a - (235 - 9 * i) * 60, "t1": a - (227 - 9 * i) * 60, "from": {},
+                   "ag": [ag("general-purpose: " + t + " pass", a - (235 - 9 * i) * 60, a - (227 - 9 * i) * 60)]}
+               for i, (t, o) in enumerate((("설계", "done"), ("구현", "done"), ("검증", "fail")))}
+        # rid = t0 on every row (pl_model shape): without it plRunNav (48b) returns null and a past run cannot be opened.
+        past = [{"rid": a - 235 * 60, "t0": a - 235 * 60, "t1": a - 209 * 60, "end": a - 209 * 60, "cur": "검증",
+                 "lab": "", "stages": bad}]
         return [{"name": "change-flow", "proj": s["cwd"], "sid": s["sid"], "cur": "검증", "end": 0,
-                 "t0": a - 100 * 60, "t1": now, "stages": st, "pm": ["bypassPermissions"]},   # pl_runs.pl_pm shape
+                 "rid": a - 100 * 60, "t0": a - 100 * 60, "t1": now, "stages": st, "pm": ["bypassPermissions"]},   # pl_runs.pl_pm shape
                 {"name": "hotfix", "proj": s["cwd"], "sid": s["sid"], "cur": "구현", "end": 0,
-                 "t0": a - 40 * 60, "t1": now - 60, "stages": hot},
+                 "rid": a - 40 * 60, "t0": a - 40 * 60, "t1": now - 60, "stages": hot},
                 {"name": "release-check", "proj": s["cwd"], "sid": s["sid"], "cur": "리뷰", "end": a - 152 * 60,
-                 "t0": a - 200 * 60, "t1": a - 152 * 60, "stages": rel}]
+                 "rid": a - 200 * 60, "t0": a - 200 * 60, "t1": a - 152 * 60, "stages": rel, "past": past}]
 
     def _inv_run(self):
         """Open run of the invoice session with no stage «run»: «Implement» done, the session waits on its own command (INV_BGS)."""
@@ -308,7 +316,7 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
         # ⚠proj = the billing main checkout: demo /api/pipelines answers 400 for the invoice worktree.
         bill = self.by["bill"]["cwd"]
         return [{"name": "invoice-change", "proj": bill, "sid": s["sid"], "cur": "구현", "end": 0,
-                 "t0": a - 58 * 60, "t1": a - 15 * 60, "stages": st}]
+                 "rid": a - 58 * 60, "t0": a - 58 * 60, "t1": a - 15 * 60, "stages": st}]
 
     def wf_tl_rows(self, t0):
         """Timeline rows for the workflow run — same shape as timeline._tl_wf_rows (run row + one row per agent)."""
@@ -412,6 +420,7 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
             "saver": None, "saverView": None, "saverSwitch": None,
             "health": {"dead": [], "warns": [], "soft": [], "stale": []},
             "cardsRead": _local_iso(a - 3 * H), "cardsReadIds": [],
+            "visitDemo": a - 4 * H,   # demo-only last-visit stamp for «Since your last visit» (anchor clock, never time.time)
             "extUsage": {"gm": dict(GEM_ROW["tokSplit"], tok=GEM_ROW["tok"], n_sessions=1,
                                     cost=GEM_ROW["estCost"], costMiss=0),
                          "cx": dict(CX["tokSplit"], tok=CX["tok"], n_sessions=1, cost=CX["estCost"], costMiss=0,

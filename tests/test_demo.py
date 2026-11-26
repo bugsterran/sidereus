@@ -19,7 +19,8 @@ DENY = ("mailbox-mcp", "/Users/") + tuple(
 
 STATE_KEYS = {"presence", "acks", "acksSince", "messages", "cursors", "rooms", "profiles", "sessions", "cards",
               "attention", "build", "usage", "quota", "quotaWho", "saver", "saverView", "saverSwitch",
-              "health", "cardsRead", "cardsReadIds", "extUsage", "mine", "cfg", "review", "accts", "todo"}
+              "health", "cardsRead", "cardsReadIds", "extUsage", "mine", "cfg", "review", "accts", "todo",
+              "visitDemo"}   # demo-only last-visit anchor for the «Since your last visit» strip (R5)
 
 # Same keys as sidereus/arch_map.load() output.
 ARCH_KEYS = {"ok", "prov", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",
@@ -209,7 +210,7 @@ class DemoTest(unittest.TestCase):
         rows = self.get("/api/state", "since=0")["sessions"]
         (r,) = [p for x in rows for p in x.get("plrun", []) if p["name"] == "change-flow"]
         # `pm` (no-prompt permission modes in effect) is present only when one applied.
-        self.assertEqual(set(r) - {"pm"}, {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
+        self.assertEqual(set(r) - {"pm"}, {"name", "proj", "sid", "rid", "cur", "end", "t0", "t1", "stages"})
         self.assertEqual((r["cur"], r["end"]), ("검증", 0))
         self.assertEqual({t: s["o"] for t, s in r["stages"].items()}, {"설계": "done", "구현": "done", "검증": "run"})
         im = r["stages"]["구현"]
@@ -224,7 +225,7 @@ class DemoTest(unittest.TestCase):
         st = r["stages"]
         self.assertTrue(any(st["검증"]["t0"] <= e["ts"] <= st["검증"]["t1"] for e in ev))   # 검증 has a result line
         self.assertEqual(self.get("/api/pipelines")["projects"][0]["path"], r["proj"])
-        (p,) = self.get("/api/pipelines", "proj=" + r["proj"])["pipelines"]
+        (p,) = [x for x in self.get("/api/pipelines", "proj=" + r["proj"])["pipelines"] if x["name"] == r["name"]]
         self.assertEqual(p["name"], r["name"])
         self.assertLessEqual(set(st), {s["title"] for s in p["stages"]})
         P = dict({k: p[k] for k in ("title", "defaults", "stages")}, v=1, name=p["name"])

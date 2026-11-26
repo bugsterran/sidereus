@@ -519,3 +519,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: `permissionMode` is written only on prompt lines, and a pipeline usually runs inside one turn, so lines stamped inside the run window are rare; counting only in-window lines showed nothing for most runs.
 - Fix: a mode is in effect from its prompt until the next prompt's mode ([first_i, first_{i+1}), last one open-ended); a run gets every no-prompt mode whose interval overlaps [t0, end|now].
 - ⚠Filter to no-prompt modes inside `pl_pm`, never before: dropping a «default» span stretched the earlier bypass span over runs it never covered. A last prompt beyond the 8 MB scan (or the 64-span cap) is unknown, so nothing is shown, never «default». `tests/test_pl_runs_pm.py`.
+
+## «Since your last visit»: one `seen` for every tab, absolute times only (`web/js/48n-pipeline-visit.js` `visitTick`)
+- Cause: `seen` lives in localStorage `sidereus.visit`, shared by every tab of the browser; any visible tab refreshes it (≤30 s), so a gap means no tab was visible for 10 min — a hidden tab returning while another stayed open shows nothing, by design.
+- ⇒ The hide/pagehide write runs only after this tab's first visible tick, and pagehide skips a tab that was already hidden: either one moved `seen` past an absence nobody had seen yet.
+- ⚠Strip text uses hh:mm only. A relative «N min ago» changes every poll, so `paintPipe`'s unchanged-HTML skip never fires and the Watch view rebuilds (closing selects, dropping hover tooltips) every 2.5 s. `tests/test_visit_strip_js.py`.
+- ⚠«gate passed» needs a head run with `cur` = the definition's last stage done|skip (`visitVerdict`); an archived past run is never pass (fail or unknown): the hook keeps no `stop` for it and `_close_stale` closes a stopped cur stage as done, so «every stage done» passed a run stopped at stage 2 of 6. No loaded definition = unknown.
+- ⚠Clicking a run of an ended session can open a live same-name run instead: `plOvSid`/`plLiveRun` (48b) always prefer a live run, so 48n alone cannot pin it. Fix belongs in 48b.

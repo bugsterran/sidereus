@@ -169,8 +169,11 @@ class SameKeysAsRealBuilders(_Patch):
         self.assertEqual([r["t1"] for r in pl], sorted((r["t1"] for r in pl), reverse=True))   # newest first
         for r in pl:
             # `pm` (no-prompt permission modes in effect) is present only when one applied.
-            self.assertEqual(set(r) - {"pm"}, {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
-            for s in r["stages"].values():
+            self.assertEqual(set(r) - {"pm", "past"}, {"name", "proj", "sid", "rid", "cur", "end", "t0", "t1", "stages"})
+            self.assertEqual(r["rid"], r["t0"])   # pl_model: rid = t0 (plRunNav needs it)
+            for p in r.get("past", ()):   # pl_model past entry keys (release-check's earlier failed run)
+                self.assertEqual(set(p), {"rid", "t0", "t1", "end", "cur", "lab", "stages"})
+            for s in [s for x in [r] + r.get("past", []) for s in x["stages"].values()]:
                 self.assertLessEqual(set(s), {"o", "n", "t0", "t1", "from", "p0", "k", "ag", "ps", "cm"})
                 cm = s.get("cm", [])   # commit stamps: epoch numbers only
                 self.assertTrue(isinstance(cm, list) and len(cm) <= 4 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in cm), cm)

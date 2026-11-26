@@ -90,6 +90,7 @@ async function poll(first){
     CARDS=s.cards||[]; CREAD=s.cardsRead||''; CRIDS=new Set((s.cardsReadIds||[]).concat([...CRPEND]));
     try{ if(s.uiRev != null && s.uiRev !== UIS.rev()) UIS.pull(); }catch(e){ softErr('uiPull', e); }   // another tab changed UI prefs (app-head.js)
     ATTN = s.attention || null;     // drawn by the buildAlarm wrapper (17-attention.js)
+    if(!ISPOP && !ISWP && !ISBP && typeof visitTick === 'function') try{ visitTick(s); }catch(e){ softErr('visitTick', e); }   // «Since your last visit» (48n)
     REVIEW = s.review || null; try{ brBoardTick(); }catch(e){ softErr('brBoardTick', e); }   // review queue (88c) + branch-tab board (88b)
     try{ ntfTick(ATTN, REVIEW && REVIEW.rows); }catch(e){ softErr('ntfTick', e); }   // optional OS notification on new attention / review items (43-notify.js)
     EXTU = s.extUsage || {};        // Tokens tab «By platform» block

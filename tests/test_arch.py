@@ -578,6 +578,7 @@ class Arch(unittest.TestCase):
     def test_no_bare_localstorage(self):
         # UI prefs live in UIS (web/app-head.js, server-backed); only rvnotes drafts and notification keys stay in localStorage.
         ok = {"88e-rvnotes.js", "43-notify.js", "35e-worklog-plrun.js"}   # cross-window jump needs the storage event; UIS never fires it
+        ok.add("48n-pipeline-visit.js")   # per-browser last-visit time; UIS would POST it to the server prefs file every 30 s
         bad = ["%s:%d" % (_rel(p), _js_strip(_read(p)).count("\n", 0, m.start()) + 1)
                for p in _js_files() if os.path.basename(p) not in ok
                for m in re.finditer(r"\blocalStorage\b", _js_strip(_read(p)))]

@@ -89,7 +89,7 @@ class R2InvoiceRunWaits(_Base):
         self.assertEqual(pl["cur"], "구현")
         self.assertEqual(pl["t1"], max(s["t1"] for s in pl["stages"].values()))
         self.assertEqual(pl["proj"], self.w.by["bill"]["cwd"])
-        self.assertEqual(set(pl), {"name", "proj", "sid", "cur", "end", "t0", "t1", "stages"})
+        self.assertEqual(set(pl), {"name", "proj", "sid", "rid", "cur", "end", "t0", "t1", "stages"})
         # waitOnLabel (20-session-state.js): state wait + no sub + bgs -> «Command waiting on work»
         self.assertEqual((r["state"], r["sub"]), ("wait", []))
         self.assertTrue(r["bgs"] and all(set(b) == {"lab", "min"} for b in r["bgs"]))

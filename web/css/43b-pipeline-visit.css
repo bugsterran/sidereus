@@ -1,0 +1,16 @@
+/* «Since your last visit» strip under the .pltop row (48n): one row that wraps at narrow widths, never wider than the column. */
+.plvs{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;box-sizing:border-box;max-width:100%;min-width:0;margin:0 0 8px;padding:6px 10px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-left:3px solid var(--nx-info,#5b8def);border-radius:6px;font-size:12px;color:var(--nx-t2,#909298)}
+.plvs>b{color:var(--nx-t1,#cdcedc);font-weight:600}
+.plvst{color:var(--nx-t3,#6b6d73);white-space:nowrap}
+.plvsc{display:inline-flex;align-items:baseline;gap:5px;padding:2px 9px;background:none;border:1px solid var(--nx-rule,#252629);border-radius:12px;color:inherit;font:inherit;white-space:nowrap;cursor:pointer}
+html[data-ui] .plvsc:hover:not([disabled]){background:var(--nx-hover,#1b1d20);color:var(--nx-t1,#cdcedc)}
+.plvsc[disabled]{opacity:.55;cursor:default}
+.plvsc b{color:var(--nx-t1,#cdcedc)}
+.plvsc .ok{color:var(--nx-ok,#71c269)}
+.plvsc .bad{color:var(--nx-err,#e5484d)}
+.plvsx{margin-left:auto;padding:2px 9px;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t2,#909298);font:inherit;cursor:pointer}
+html[data-ui] .plvsx:hover{background:var(--nx-hover,#1b1d20);color:var(--nx-t1,#cdcedc)}
+.plvsm{width:400px;max-width:calc(100vw - 8px)}
+.plvsm .plapki i.plvsv.pass{color:var(--nx-ok,#71c269)}
+.plvsm .plapki i.plvsv.fail{color:var(--nx-err,#e5484d)}
+.plvsm .plapki i.plvsv.unknown,.plvsm .plapki i.plvsw{color:var(--nx-t3,#6b6d73)}

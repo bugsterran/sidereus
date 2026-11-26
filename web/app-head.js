@@ -104,7 +104,7 @@ var UIS=(function(){
   };
   if(up&&typeof up==='object')Object.keys(up).forEach(function(k){var v=up[k];if(k!=='_v'&&v!==null&&v!==undefined)M[k]=typeof v==='string'?v:JSON.stringify(v);});
   else if(up===null){
-    var RE=/^(mb|sidereus\.|agPH$|dfW$)/,NO=/^(sidereus\.rvnotes\.|sidereus\.notify$|sidereus\.osntf$)/,s={};
+    var RE=/^(mb|sidereus\.|agPH$|dfW$)/,NO=/^(sidereus\.rvnotes\.|sidereus\.notify$|sidereus\.osntf$|sidereus\.visit$)/,s={};
     try{if(LS)for(var i=0;i<LS.length;i++){var k=LS.key(i);if(k!==null&&RE.test(k)&&!NO.test(k)){var v=LS.getItem(k);if(v!==null)M[k]=v;}}}
     catch(e){console.warn('[UIS] migration read failed:',e);}
     Object.keys(M).forEach(function(k){s[k]=M[k];});

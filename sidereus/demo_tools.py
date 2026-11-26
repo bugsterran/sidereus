@@ -286,6 +286,8 @@ DEMO_PIPE = {"name": "change-flow", "ok": True, "errs": [], "sha": "0d1e2m3o4p5i
                  {"title": "검증", "agent": "verifier", "model": "sonnet", "gate": "npm run check",
                   "onFail": {"goto": "구현", "max": 2}, "ui": {"x": 540, "y": 24}},
                  {"title": "리뷰", "agent": "code-reviewer", "onFail": {"goto": "구현", "max": 1}, "ui": {"x": 788, "y": 24}}]}
+# Definition of the ended demo `release-check` run: «Since your last visit» grades «pass» only when `cur` is the last defined stage.
+DEMO_PIPE_REL = dict(DEMO_PIPE, name="release-check", sha="0r1e2l3c4h5e6c7k", title="Release check — acme-web")
 
 
 def _demo_catalog(demo_proj):
@@ -312,7 +314,7 @@ def _demo_pipelines(proj, demo_proj, empty_proj=None):
     """GET /api/pipelines in the pipeline.pipelines shape: the demo project plus `empty_proj` (no pipelines, so the empty-project
     start row is reachable in the demo); the only disk read is the bundled stage catalog."""
     if not proj:
-        projects = [{"path": demo_proj, "n": 1}] + ([{"path": empty_proj, "n": 0}] if empty_proj else [])
+        projects = [{"path": demo_proj, "n": 2}] + ([{"path": empty_proj, "n": 0}] if empty_proj else [])
         return 200, {"ok": True, "projects": projects, "added": []}
     if proj != demo_proj and not (empty_proj and proj == empty_proj):
         return 400, {"ok": False, "msg": "unknown project"}   # ⚠not 404: the page reads 404 as «feature off»
@@ -321,7 +323,7 @@ def _demo_pipelines(proj, demo_proj, empty_proj=None):
         ("implementer", "Implements one file slice and passes the fast gate."),
         ("planner", "Turns a request into acceptance criteria and file slices."),
         ("verifier", "Runs the full gate and reports pass or fail; fixes nothing."))]
-    pls = [json.loads(json.dumps(DEMO_PIPE))] if proj == demo_proj else []
+    pls = [json.loads(json.dumps(p)) for p in (DEMO_PIPE, DEMO_PIPE_REL)] if proj == demo_proj else []
     return 200, {"ok": True, "proj": proj, "pipelines": pls, "agents": agents, "catalog": _demo_catalog(demo_proj),
                  "models": ["inherit", "opus", "sonnet", "haiku"], "roles": {}, "default_tasks": {}, "skills": [],
                  "rule_files": [], "workflows": [], "suggest": [], "std": [],

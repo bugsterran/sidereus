@@ -33,6 +33,9 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - Drag the grips between the parts to resize; double-click a grip for the defaults (canvas 75%, pane 14%, card 11% of the free height). Sizes are kept as shares, so a window resize keeps the proportions.
 - The head row holds the pickers, «Gates n/m», «Evaluation», the run bar, «✎ Edit» and «▶ Run».
 
+### Since your last visit
+After the viewer was hidden or closed for 10 minutes or more, a «Since your last visit» strip appears under the head row when something changed: runs finished (gate passed / failed; the rest are unknown, e.g. stopped), commits after a pass, sessions waiting on a person and sessions ended. Click a count to open its run, attention row or session (a list when there are several). «Dismiss» closes it until your next absence. A count with «+» may be missing older runs; «?» means the data did not arrive. The record stays in this browser.
+
 ### Get started
 - A four-step checklist sits at the top: «Claude Code connected», «Project added», «First pipeline», «Gate red-checked». «Hide» dismisses it.
 - «Start with recommended setup» writes three starter pipelines (quick-fix, change, review) to `.claude/pipelines/` after a diff preview and confirm. The gate is taken from the project's test command when one is found. Strict mode is an opt-in checkbox, off by default.

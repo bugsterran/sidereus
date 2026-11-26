@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Pipelines: after the viewer was hidden or closed for 10 minutes or more, a «Since your last visit» strip counts runs finished (gate passed / failed), commits after a pass, sessions waiting on a person and sessions that ended; each count opens its evidence, and «Dismiss» closes it.
 - Sessions and Pipelines: a session row shows «No prompts» when its permission mode runs tools without approval prompts (`bypassPermissions`, `auto`, `dontAsk`), and the Watch result pane says when a pipeline run ran in such a mode.
 
 ### Changed

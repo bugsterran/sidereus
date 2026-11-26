@@ -24,7 +24,7 @@ class DemoPipelinesEmpty(unittest.TestCase):
     def test_projects_list(self):
         code, b = self.get("")
         self.assertEqual(code, 200)
-        self.assertEqual(b["projects"], [{"path": self.web, "n": 1}, {"path": self.bill, "n": 0}])
+        self.assertEqual(b["projects"], [{"path": self.web, "n": 2}, {"path": self.bill, "n": 0}])
 
     def test_empty_project(self):
         code, b = self.get("proj=" + self.bill)
@@ -36,7 +36,7 @@ class DemoPipelinesEmpty(unittest.TestCase):
     def test_main_project_unchanged(self):
         code, b = self.get("proj=" + self.web)
         self.assertEqual(code, 200)
-        self.assertEqual(len(b["pipelines"]), 1)
+        self.assertEqual([p["name"] for p in b["pipelines"]], ["change-flow", "release-check"])
 
     def test_unknown_still_400(self):
         for p in ("/tmp/x", self.bill + "/sub", self.w.by["inv"]["cwd"]):  # nosec B108 -- fake path, never touched
