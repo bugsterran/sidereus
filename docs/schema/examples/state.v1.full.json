@@ -18,6 +18,14 @@
       "ageSec": 4,
       "tool": "Agent",
       "plm": {"name": "release", "title": "build", "age": 30},
+      "runs": [
+        {"name": "release", "rid": 1789999000, "t0": 1789999000, "end": null, "cur": "build", "verdict": "unknown",
+         "stages": {"plan": "done", "build": "run"}},
+        {"name": "release", "rid": 1789990000, "t0": 1789990000, "end": 1789993000, "cur": "verify", "verdict": "pass",
+         "stages": {"plan": "done", "build": "done", "verify": "done"}},
+        {"name": "release", "rid": 1789980000, "t0": 1789980000, "end": 1789981000, "cur": "build", "verdict": "fail",
+         "stages": {"plan": "done", "build": "fail"}}
+      ],
       "sub": [
         {"lab": "Explore: map the checkout flow", "aid": "a1b2c3d4", "tid": "toolu_demo_01", "min": 3, "idle": 5}
       ]

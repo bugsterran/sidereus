@@ -23,6 +23,7 @@ function visitSave(r){
 }
 // Run verdict: fail if any stage failed; pass only for a run that ended, was not stopped, and whose `cur` is the definition's last stage done|skip.
 // ⚠An archived (past) run with `stop` null was archived before the hook kept it: never pass, since _close_stale turns a stopped/idle cur stage into done.
+// ⚠Equals sidereus/state_v1.py verdict (GET /api/v1/state runs[].verdict); change both — vectors in tests/fixtures/verdict_vectors.json.
 function visitVerdict(S, end, stop, titles, cur, past){
   const v = Object.values(S || {}).filter(s => s && typeof s === 'object');
   if(v.some(s => s.o === 'fail')) return 'fail';

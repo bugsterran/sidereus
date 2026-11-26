@@ -153,6 +153,10 @@ Tests: `tests/test_verdict_guide.py` (every id the server emits needs a file).
 - Use `GET /api/v1/state` («sidereus-state v1», `sidereus/state_v1.py`; schema `docs/schema/sidereus-state.v1.json`).
   `/api/state` and `/api/messages` are internal (`n` defaults to 200, caps at 1000, ≤ 0 is 400).
 - v1 may gain optional fields; removing, renaming or redefining one makes v2.
+- `sessions[].runs` (optional): the head pipeline run plus up to 5 earlier runs per pipeline name, newest first;
+  each `{name, rid, t0, end (null while open), cur, verdict, stages: {stage title: state}}`. `verdict` is `pass`
+  (end stamped, not stopped, `cur` = the definition's last stage done or skipped), `fail` (a stage failed) or
+  `unknown` (definition unreadable, or an older archived run). A session with no runs has no `runs` key.
 - Host must be `127.0.0.1:<port>` or `localhost:<port>`; browser cross-site and same-site requests are refused.
 - ⚠v1 is metadata only and omits fields derived from tool input (`targ`, `blocked`). Never add a field that can carry
   message or tool content.

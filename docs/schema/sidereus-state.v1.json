@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "sidereus-state.v1",
   "title": "sidereus-state v1",
-  "description": "Public, versioned snapshot of Sidereus (GET /api/v1/state). CONFORMANCE (MUST): this document carries metadata only. No field may carry the content of gen_ai.input.messages, gen_ai.output.messages, gen_ai.system_instructions, gen_ai.tool.call.arguments or gen_ai.tool.call.result. The only free-text fields are sessions[].sub[].lab, sessions[].plm.title and rooms.*.topic, each a one-line label set by the parent agent or room owner, never a message body or tool input. Producers MUST drop anything else rather than add it here; consumers MUST NOT expect conversation content. OTel GenAI mapping (INFORMATIVE — the semantic conventions are still Development and may change): sid -> gen_ai.conversation.id; model -> gen_ai.request.model; plat -> gen_ai.provider.name (cc -> anthropic, cx -> openai, gm -> gcp.gemini); sub[].lab -> gen_ai.agent.name / gen_ai.agent.description (\"<agentType>: <description>\"); sub[].aid -> gen_ai.agent.id; tool -> gen_ai.tool.name. A block whose feature is switched off is omitted.",
+  "description": "Public, versioned snapshot of Sidereus (GET /api/v1/state). CONFORMANCE (MUST): this document carries metadata only. No field may carry the content of gen_ai.input.messages, gen_ai.output.messages, gen_ai.system_instructions, gen_ai.tool.call.arguments or gen_ai.tool.call.result. The only free-text fields are sessions[].sub[].lab, sessions[].plm.title, sessions[].runs[].cur, the keys of sessions[].runs[].stages (pipeline stage titles from the pipeline definition) and rooms.*.topic, each a one-line label set by the parent agent, pipeline author or room owner, never a message body or tool input. Producers MUST drop anything else rather than add it here; consumers MUST NOT expect conversation content. OTel GenAI mapping (INFORMATIVE — the semantic conventions are still Development and may change): sid -> gen_ai.conversation.id; model -> gen_ai.request.model; plat -> gen_ai.provider.name (cc -> anthropic, cx -> openai, gm -> gcp.gemini); sub[].lab -> gen_ai.agent.name / gen_ai.agent.description (\"<agentType>: <description>\"); sub[].aid -> gen_ai.agent.id; tool -> gen_ai.tool.name. A block whose feature is switched off is omitted.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "version", "at", "x"],
@@ -54,8 +54,23 @@
             "age": {"type": "integer"}
           }
         },
+        "runs": {"type": "array", "items": {"$ref": "#/$defs/run"}, "description": "Recorded pipeline runs (head run plus up to 5 earlier runs per name), newest t0 first; absent when the session has none."},
         "sub": {"type": "array", "items": {"$ref": "#/$defs/agent"}},
         "acct": {"type": "string", "maxLength": 24, "description": "Claude config root label; present only for a non-primary root."}
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "rid", "t0", "end", "cur", "verdict", "stages"],
+      "properties": {
+        "name": {"type": "string", "maxLength": 40, "description": "Pipeline name."},
+        "rid": {"type": "number", "description": "Run id (its start time)."},
+        "t0": {"type": "number", "description": "Start, Unix seconds."},
+        "end": {"type": ["number", "null"], "description": "End, Unix seconds; null while open."},
+        "cur": {"type": "string", "maxLength": 80, "description": "Current (last reached) stage title."},
+        "verdict": {"type": "string", "enum": ["pass", "fail", "unknown"], "description": "fail = a stage failed; pass = ended, not stopped, last stage of the definition done or skipped; else unknown."},
+        "stages": {"type": "object", "additionalProperties": {"type": "string", "maxLength": 8}, "description": "Stage title -> state (run | done | skip | back | fail | hold, open set)."}
       }
     },
     "agent": {

@@ -1,0 +1,23 @@
+[
+  {"why": "last stage done, ended, not stopped -> pass", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "pass"},
+  {"why": "last stage skipped -> pass", "S": {"a": {"o": "done"}, "b": {"o": "skip"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "pass"},
+  {"why": "last stage still run -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "run"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "last stage hold -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "hold"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "a failed stage anywhere -> fail", "S": {"a": {"o": "fail"}, "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "fail"},
+  {"why": "fail wins over an open run", "S": {"a": {"o": "fail"}}, "end": 0, "stop": 0, "titles": null, "cur": "a", "past": false, "want": "fail"},
+  {"why": "past run with stop null still fails on a failed stage", "S": {"a": {"o": "done"}, "b": {"o": "fail"}}, "end": 100, "stop": null, "titles": ["a", "b"], "cur": "b", "past": true, "want": "fail"},
+  {"why": "past run with stop null is never pass", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": null, "titles": ["a", "b"], "cur": "b", "past": true, "want": "unknown"},
+  {"why": "past run with stop known 0 can pass", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": true, "want": "pass"},
+  {"why": "stopped run -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 90, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "stopped past run -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 90, "titles": ["a", "b"], "cur": "b", "past": true, "want": "unknown"},
+  {"why": "end 0 (open) -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 0, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "end null -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": null, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "definition unreadable (titles null) -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": null, "cur": "b", "past": false, "want": "unknown"},
+  {"why": "empty definition (titles []) -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": [], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "cur is not the last stage -> unknown", "S": {"a": {"o": "done"}, "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": ["a", "b", "c"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "cur is last but missing from S -> unknown", "S": {"a": {"o": "done"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "non-dict stage values are ignored, cur stage non-dict -> unknown", "S": {"a": "fail", "b": 3, "c": null}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "unknown"},
+  {"why": "non-dict stage values do not hide a pass", "S": {"x": "fail", "y": [1], "b": {"o": "done"}}, "end": 100, "stop": 0, "titles": ["a", "b"], "cur": "b", "past": false, "want": "pass"},
+  {"why": "S null -> unknown", "S": null, "end": 100, "stop": 0, "titles": ["a"], "cur": "a", "past": false, "want": "unknown"},
+  {"why": "stop null on a head run counts as not stopped", "S": {"b": {"o": "done"}}, "end": 100, "stop": null, "titles": ["b"], "cur": "b", "past": false, "want": "pass"}
+]
