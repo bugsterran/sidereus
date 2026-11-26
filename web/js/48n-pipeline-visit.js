@@ -150,8 +150,9 @@ function visitGo(it){
   if(!it) return;
   if(it.k === 'run' || it.k === 'cm'){
     if(mainView !== 'pipe') setMainView('pipe');
-    plOvPick(it.proj, it.name, it.sid);   // ⚠clears runSel: set the past pick after it
-    if(it.past){ PLS.runSel = { sid: it.sid, name: it.name, rid: it.rid, cur: it.cur }; plPaint(); }
+    plOvPick(it.proj, it.name, it.sid);   // ⚠clears runSel: set the pin after it
+    // Pin head or past: plOvPick/plLiveRun alone open another session's live run of the same name (48b plPinRun).
+    PLS.runSel = { sid: it.sid, name: it.name, rid: it.rid, cur: it.cur, pin: true }; plPaint();
     return;
   }
   if(it.k === 'wait'){ let ok = false; try{ ok = actAttnGo({ sid: it.sid, cwd: it.proj }); }catch(e){ softErr('visitWait', e); } if(ok) return; }

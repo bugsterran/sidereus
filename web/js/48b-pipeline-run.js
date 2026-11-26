@@ -79,14 +79,42 @@ function plLiveRun(proj, name){
 }
 // Run the canvas shows: an earlier run of the live session picked in the head menu (PLS.runSel {sid, name, rid, cur}, per project in sidereus.plrunsel), else plLiveRun.
 // ⚠The pick drops itself once the live session or its current rid changes — an old run must never cover a newly started one.
+// A pin (runSel.pin, 48n strip click) is exempt: plLiveRun prefers any live run, so an ended session's run of the same name was never shown.
 function plViewRun(proj, name){
-  const lv = plLiveRun(proj, name), s = PLS.runSel;
+  const s = PLS.runSel;
+  if(s && s.pin && s.name === name){
+    const v = plPinRun(proj, s);
+    if(v) return v;
+    if((SESS || []).length && PLS.data[proj]) PLS.runSel = null;   // run or session gone: back to the live view (⚠kept while a reload loads)
+    return plLiveRun(proj, name);
+  }
+  const lv = plLiveRun(proj, name);
   if(!s) return lv;
   const nav = plRunNav(lv), i = nav && s.name === name && s.sid === nav.sid && s.cur === nav.cur ? nav.past.findIndex(q => q.rid === s.rid) : -1;
   if(i < 0){ if(lv || ((SESS || []).length && PLS.data[proj])) PLS.runSel = null; return lv; }   // ⚠before sessions load (reload) lv is null: keep the restored pick
+  return plPastLv(proj, name, lv, nav, i);
+}
+// Earlier run i of nav (newest first) drawn from its own plrun entry, with the picker position.
+function plPastLv(proj, name, lv, nav, i){
   const q = nav.past[i], p = ((PLS.data[proj] || {}).pipelines || []).find(x => x.name === name);
   const v = plPrLv(lv.sid, Object.assign({}, q, { name, proj }), (p && p.stages) || [], Date.now());
   v.nav = Object.assign({}, nav, { k: nav.N - 1 - i, rid: q.rid, end: q.end || q.t1 || 0 });
+  return v;
+}
+// Pinned run {sid, name, rid} from that session's own plrun row (head, or an earlier run by rid); null when the row or rid is gone.
+// ⚠Matches rid in head or past, not runSel.cur: a pinned session that starts a new run keeps showing the pinned one.
+function plPinRun(proj, s){
+  const key = q => (q.rid != null ? q.rid : q.t0), x = (SESS || []).find(r => r && r.sid === s.sid);
+  const pr = x && (x.plrun || []).find(r => r && r.name === s.name && (!r.proj || r.proj === proj)
+    && (key(r) === s.rid || (Array.isArray(r.past) && r.past.some(q => q && q.rid === s.rid))));
+  if(!pr) return null;
+  const p = ((PLS.data[proj] || {}).pipelines || []).find(q => q.name === s.name), lv = plPrLv(x.sid, pr, (p && p.stages) || [], Date.now());
+  lv.pin = true;
+  if(key(pr) === s.rid) return lv;
+  const nav = plRunNav(lv), i = nav ? nav.past.findIndex(q => q.rid === s.rid) : -1;
+  if(i < 0) return null;
+  const v = plPastLv(proj, s.name, lv, nav, i);
+  v.pin = true;
   return v;
 }
 // Run picker data of a plrun-based lv: {sid, name, cur, t0, lab, past (newest first, ≤5), N, k, rid}; null without earlier runs (= today's head).
@@ -97,11 +125,11 @@ function plRunNav(lv){
 }
 function plRunLab(k, t0, lab){ return TV({msg: 'Run {k}', vars: {k}}) + (t0 ? ' · ' + hhmm(t0) : '') + (lab ? ' · ' + String(lab) : ''); }   // lab is session data: esc() only, never T()
 // «Run k/N ▾» in the live head (+ «Back to current» while an earlier run is shown); the menu is a fixed overlay (never shifts the canvas).
-function plRunPick(nav){
-  if(!nav) return '';
-  const old = nav.rid !== nav.cur, lab = TV({msg: 'Run {k}/{n}', vars: {k: nav.k, n: nav.N}}) + (old && nav.end ? ' · ' + TV({msg: 'ended {t}', vars: {t: hhmm(nav.end)}}) : '');
-  return '<button class="plrv' + (old ? ' old' : '') + '" data-plrv aria-haspopup=menu>' + esc(lab + ' ▾') + '</button>'
-    + (old ? '<button class=plrv data-plrvb>' + esc(T('Back to current')) + '</button>' : '');
+// pin: a strip-pinned run (plPinRun) also gets «Back to current», since its head may have no earlier runs and so no menu.
+function plRunPick(nav, pin){
+  const old = !!nav && nav.rid !== nav.cur, lab = nav ? TV({msg: 'Run {k}/{n}', vars: {k: nav.k, n: nav.N}}) + (old && nav.end ? ' · ' + TV({msg: 'ended {t}', vars: {t: hhmm(nav.end)}}) : '') : '';
+  return (nav ? '<button class="plrv' + (old ? ' old' : '') + '" data-plrv aria-haspopup=menu>' + esc(lab + ' ▾') + '</button>' : '')
+    + (old || pin ? '<button class=plrv data-plrvb>' + esc(T('Back to current')) + '</button>' : '');
 }
 let PLRV = false;   // run menu open
 function plRvClose(){ const el = document.getElementById('plrvm'); if(el) el.remove(); PLRV = false; }
@@ -118,8 +146,10 @@ function plRvOpen(rc){
   document.body.appendChild(el); PLRV = true;
 }
 function plRvPick(v){
-  const p = plCur(), nav = plRunNav(p && plViewRun(PLS.proj, p.name)), q = nav && nav.past.find(x => String(x.rid) === v);
-  PLS.runSel = q ? { sid: nav.sid, name: p.name, rid: q.rid, cur: nav.cur } : null;
+  const p = plCur(), nav = plRunNav(p && plViewRun(PLS.proj, p.name)), q = nav && nav.past.find(x => String(x.rid) === v), s = PLS.runSel;
+  const pin = !!(s && s.pin && nav && s.sid === nav.sid);   // a pinned session's own picker stays on that session (its «current» too)
+  PLS.runSel = q ? Object.assign({ sid: nav.sid, name: p.name, rid: q.rid, cur: nav.cur }, pin ? { pin: true } : {})
+    : pin && String(nav.cur) === v ? { sid: nav.sid, name: p.name, rid: nav.cur, cur: nav.cur, pin: true } : null;
   plRvClose(); plPaint();
 }
 document.addEventListener('pointerdown', e => { if(PLRV && !(e.target.closest && e.target.closest('#plrvm,[data-plrv]'))) plRvClose(); }, true);
@@ -536,7 +566,7 @@ function plLiveHead(lv, lt){
   const txt = (fin ? T('Done') : r.run ? T('Running') : T('Last run')) + ' · ' + sid8(lv.sid)
     + (r.phase ? ' · ' + plgShow(r.phase) : '') + ' · ' + T('Agents') + ' ' + r.total + (r.fail ? ' · ' + T('Failures') + ' ' + r.fail : '') + ' · ' + TV({msg: '{n}/{m} done', vars: {n: k, m: n}}) + ' · ' + ago(Math.round(sec));   // counts finished stages; agents are counted above
   const nav = plRunNav(lv), old = !!nav && nav.rid !== nav.cur;
-  return '<div class="plrunst' + (r.run ? ' on' : '') + (fin ? ' fin' : '') + (old ? ' old' : '') + '"><span title="' + esc(txt) + '">' + plRunPick(nav) + esc(txt)   // title: the bar line is ellipsised (43-pipeline.css)
+  return '<div class="plrunst' + (r.run ? ' on' : '') + (fin ? ' fin' : '') + (old ? ' old' : '') + '"><span title="' + esc(txt) + '">' + plRunPick(nav, !!lv.pin) + esc(txt)   // title: the bar line is ellipsised (43-pipeline.css)
     + '</span><i class=plprog><i style="width:' + (n ? Math.round(100 * k / n) : 0) + '%"></i></i></div>';
 }
 async function plRunSend(){

@@ -691,7 +691,7 @@ class CanvasFit(unittest.TestCase):
 
 class RunPicker(unittest.TestCase):
     """Earlier runs of the live session (plrun `past`): plViewRun pick, head picker, menu labels escaped (48b)."""
-    FNS = ("plViewRun", "plRunNav", "plRunLab", "plRunPick", "plLiveHead", "plRvOpen", "plRvClose", "plLiveRun", "plProjSess", "plMem", "plRunName", "plSubsOf") + MODEL
+    FNS = ("plViewRun", "plPastLv", "plPinRun", "plRunNav", "plRunLab", "plRunPick", "plLiveHead", "plRvOpen", "plRvClose", "plLiveRun", "plProjSess", "plMem", "plRunName", "plSubsOf") + MODEL
     PAST = {"rid": N - 5000, "t0": N - 5000, "t1": N - 4000, "end": N - 4000, "cur": "", "lab": "old <img src=x>",
             "stages": {"설계": {"o": "done", "n": 1, "t0": N - 5000, "t1": N - 4000, "from": {}}}}
 

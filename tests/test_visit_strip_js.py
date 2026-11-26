@@ -175,14 +175,14 @@ class VisitHtml(unittest.TestCase):
             self.assertNotIn(bad, pop)
             self.assertNotIn(bad, d["strip"])
 
-    def test_r2_run_click_opens_watch_and_past_run_sets_runsel(self):
+    def test_r2_run_click_opens_watch_and_pins_the_run(self):
         d = run("VISIT.data = visitCollect(" + json.dumps(SESS) + ", null, 900, 2000, visitDefs); mainView = 'time';"
                 " const L = visitList('runs'); visitGo(L[1]); const past = PLS.runSel; visitGo(L[0]);"
                 + out("{pick: PICK, past, cur: PLS.runSel, mv: mainView}"))
         self.assertEqual(d["mv"], "pipe")
         self.assertEqual(d["pick"][0], ["/w/shop", "change", "abcdef1234567890"])
-        self.assertEqual(d["past"], {"sid": "abcdef1234567890", "name": "change", "rid": 1200, "cur": 1500})
-        self.assertIsNone(d["cur"])
+        self.assertEqual(d["past"], {"sid": "abcdef1234567890", "name": "change", "rid": 1200, "cur": 1500, "pin": True})
+        self.assertEqual(d["cur"], {"sid": "abcdef1234567890", "name": "change", "rid": 1500, "cur": 1500, "pin": True})   # head run pinned too (48b plPinRun)
 
     def test_r2_single_waiting_item_jumps_to_attention_row(self):
         resp = [{"r": {"sid": "w1", "cwd": "/w/x"}, "since": 950}]
