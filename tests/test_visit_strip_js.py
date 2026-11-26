@@ -25,6 +25,7 @@ function attnRows(){ return { resp: RESP }; }
 function plPaint(){ PAINT++; } function plFitSoon(){ FIT++; }
 function setMainView(v){ mainView = v; }
 function plOvPick(p, n, s){ PICK.push([p, n, s]); PLS.runSel = null; }
+function plNowLive(ss){ return (ss || []).filter(x => x && !['done', 'abort', 'gone'].includes(x.state)); }   // 48j stand-in: visitGo marks «Working now» only for a live pinned sid
 function actAttnGo(x){ ATTGO.push(x.sid); return true; }
 function cpGo(x){ CPGO.push(x.sid); }
 const window = { innerWidth: 1920 };
