@@ -28,6 +28,7 @@ from sidereus.ext_presence import ext_presence_rows
 from sidereus import pl_runs, prefs   # module access: tests stub pl_runs._ag_by_name
 from sidereus.perm_marks import perm_wait
 from sidereus.compact_marks import compacting
+from sidereus import compact_eta
 from sidereus.term import term_attach
 
 
@@ -362,6 +363,7 @@ def _session_row(fp, mt, now, live, p, stale=False):
         **dict(zip(("mbox", "mboxSrc"), mbox_of(p.get("cwd")))),
         "cost": round(_projcost_of(p.get("cwd")), 2),   # ★project total (not per session — comment above)
         **_row_ctx(p, win, win_src),
+        **compact_eta.row_eta(fp, p, win, dead),   # cmpEta {n, pt, grow, k} or absent (unknown never shows a number)
         # ⚠No `task`/`reply` (human instruction · assistant reply text) — message bodies (rule 1, 2026-09-25).
         #   `sessions()` hands `task` to the transition check server-side only (to skip /exit·/clear); cards carry no text.
         "git": _git_state(p.get("cwd")),  # unpushed·dirty — how far the output got

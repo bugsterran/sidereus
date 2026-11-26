@@ -6,6 +6,7 @@ from sidereus.transcript import (_human_text, _line_ts, _noise_user, _reply_summ
     _tool_target)
 from sidereus.ident import _cwd_from_slug
 from sidereus.bgtasks import _running_bg
+from sidereus.compact_eta import ctx_turns
 
 
 # ★**Records that are not activity** — things that touch the transcript even when the session is not working.
@@ -583,7 +584,7 @@ def _parse_transcript(fp):
     human_at = t["humanAt"] or _human_deep(fp)
     return {"actAt": t["actAt"], "humanAt": human_at, "tailAt": t["tailAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
             "sid": t["sid"], "cwd": cwd, "branch": t["branch"], "tool": t["tool"], "targ": t["targ"],
-            "kind": t["kind"], "ctx": t["ctx"],
+            "kind": t["kind"], "ctx": t["ctx"], "ctxs": ctx_turns(rows, fp),   # per-response ctx since the last compaction (cmpEta)
             "sub": sub, "bgs": bgs, "mon": mon,
             "model": t["model"], "task": t["task"], "reply": shp["reply"],
             "shape": shp["shape"], "ask": shp["ask"], "askTool": ask_tool, "abort": shp["abort"], "err": shp["err"],

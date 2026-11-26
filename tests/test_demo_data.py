@@ -66,7 +66,8 @@ class SameKeysAsRealBuilders(_Patch):
             # `plrun` too: the real _session_row adds it only when the session has pipeline runs
             # `acct`/`acctDir`: only on a row from a non-primary Claude root (sessions._row_acct)
             # `bgIdle`/`bgLong`: only when the session has idle / long-running background shells
-            self.assertEqual(set(r) - {"team", "term", "plrun", "acct", "acctDir", "bgIdle", "bgLong"}, real, r["id"])
+            # `cmpEta`: only when compact_eta.row_eta has an estimate
+            self.assertEqual(set(r) - {"team", "term", "plrun", "acct", "acctDir", "bgIdle", "bgLong", "cmpEta"}, real, r["id"])
 
     def test_cart_long_shell_merged_sig(self):
         w = self.world()

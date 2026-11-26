@@ -21,6 +21,7 @@ from sidereus.usage import _usage_save
 from sidereus.sessions import sessions_rows
 from sidereus.timeline import _resp_key
 from sidereus.otel import _otel_src_save
+from sidereus.compact_eta import COMPACT_DEFAULT, settings_compact, sess_win as _sess_win  # noqa: F401 (window rules live there)
 
 
 # ★Sessions run in scratchpads are **folded into one row** (2026-09-04).
@@ -217,7 +218,6 @@ _burn_lock = threading.Lock()
 #   ⚠Never write settings.json — read only.
 CLAUDE_SETTINGS = os.path.join(claude_home(), "settings.json")
 COMPACT_STATE = os.path.join(DATA_DIR, "compact-win.json")
-COMPACT_DEFAULT = 1_000_000
 
 
 def _compact_setting():
@@ -230,20 +230,7 @@ def _compact_setting():
         d = json.loads(read_text(CLAUDE_SETTINGS))
     except (OSError, ValueError):
         return None, mt                  # mid-write settings.json: caller keeps the previous window
-    d = d if isinstance(d, dict) else {}   # ⚠a non-object top level / `env` falls back to the default, not a crash
-    win = d.get("autoCompactWindow")
-    env = d.get("env")
-    # An env override in the settings file wins (only window-sized keys, not the *_PCT_* percentage).
-    for k, v in (env if isinstance(env, dict) else {}).items():
-        ku = k.upper()
-        # ⚠Only *WINDOW keys — a DISABLE_AUTOCOMPACT=1 flag must not become a 1-token window.
-        if "AUTOCOMPACT" in ku.replace("_", "") and ku.endswith("WINDOW") and "PCT" not in ku:
-            win = v
-    try:
-        win = int(win) if win is not None else COMPACT_DEFAULT
-    except (TypeError, ValueError):
-        win = COMPACT_DEFAULT
-    return (win if win >= 10000 else COMPACT_DEFAULT), mt
+    return settings_compact(d)[0], mt   # window rules shared with compact_eta (row cmpEta)
 
 
 def _compact_win(now=None):
@@ -270,13 +257,6 @@ def _compact_win(now=None):
     except Exception as e:
         warn_once("compact-win", "compact-win state write failed ({err})", vars={"err": repr(e)}, soft=True)
     return st
-
-
-def _sess_win(born, cw):
-    """Window a session born at `born` runs with, or None when unknown (born before a change we did not record)."""
-    if cw.get("value") is None:
-        return None
-    return cw["value"] if born > (cw.get("since") or 0) else cw.get("prev")
 
 
 BURN_CAP = 12_000_000

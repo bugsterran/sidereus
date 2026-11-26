@@ -4,6 +4,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ⚠**«Compacts in ~N turns» counts API responses, not prompts** (`compact_eta.ctx_turns` · `row_eta`).
+  - Cause: ctx grows per assistant response (one `message.id`, several lines); one human prompt can drive dozens, so N is in responses.
+  - ⇒ one sample per message.id on the main thread (no `isSidechain`, no zero usage); the series is cut at a `compact_boundary` line or where a newer ctx is below 70% (`ETA_DROP`) of the older one. Test `tests/test_compact_eta.py`.
+  - ⚠No hint (never a guessed number) when auto-compaction is off, < 3 diffs, median ≤ 0 or the session window is unknown; Claude Code rows only.
+  - ⚠The 400 KB / 600-line parse tail can hold only a few responses (big tool results): `_SERIES` keeps the last `ETA_KEEP` samples per transcript and the tail only adds newer ones; reset on a cut, a shrunk or replaced file. Never rebuild the series from the tail alone (k fell 10 → <3 and the hint flickered).
+  - ⚠The point is min(model window, session `autoCompactWindow`); Claude Code may compact a little before it (reserved buffer) and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` is not read, so N can run high — the label keeps «~».
+
 - ⚠**Tool bar and account band on stacked rows sat at different x and ends** (`60-sessions.css .sxw.s-tool::before`).
   - Cause: the bar was `left:-9px; top/bottom:4px; 2px` while the `.acb` band is `inset 3px` at the row edge, full height.
   - ⇒ the bar uses the band's geometry (`left:0; top:0; bottom:0; width:3px`); on an `.acb` row it overlays the band. Test `tests/test_sess_tool_bar_css.py`.

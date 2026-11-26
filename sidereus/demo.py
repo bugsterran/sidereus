@@ -39,6 +39,8 @@ CART_BG_LONG = {"n": 2, "long": 1, "max": 41 * 60}   # `npm run dev` open 41 min
 # ⚠`min` grows with now: a fixed 16 untied the command from the run (74c tlPlWaitTied, 30 min) and the strip read «Aborted».
 INV_BGS = lambda now, a: [{"lab": "pytest tests/pdf", "min": max(1, (int(now) - (a - 16 * 60)) // 60)}]
 INV_REP = {"n": 9, "tool": "Bash"}   # same call 9x in a row (attention «loop», ATT_LOOP_N = 8)
+DEMO_ETA = {"inv": {"n": 2, "pt": 1000000, "grow": 64000, "k": 10},   # «Compacts in ~N turns»: warning (n <= 3)
+            "web": {"n": 12, "pt": 1000000, "grow": 49000, "k": 10}}
 SEARCH_FAIL = {"n": 5, "tool": "Edit"}   # same tool error 5x on the search session (attention «toolfail»)
 PI_SID = _uuid(random.Random(SEED + 31))   # hook-fed pi row (ext.py ext_rows key set), extension older than the template
 PI_ROW = dict(GEM_ROW, id=PI_SID[:8], sid=PI_SID, project="acme-web", kind="pi", plat="pi",
@@ -364,6 +366,7 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                        "name": s["cwd"].rsplit("/", 1)[-1]},
                 "mbox": s["mbox"], "mboxSrc": "identity", "cost": s["cost"], "ctx": s["ctx"],
                 "model": s["model"], "win": s["win"], "winSrc": "model", "winN": 0,
+                **({"cmpEta": DEMO_ETA[s["k"]]} if s["k"] in DEMO_ETA else {}),   # compact_eta.row_eta shape
                 "git": {"web": "~4", "cart": "~2", "inv": "~1"}.get(s["k"], ""), "wreck": 0,
                 **({"bgIdle": CART_BG_IDLE} if s["k"] == "cart" else {}),   # sessions.py shape: one shell quiet 25 min
                 **({"bgLong": CART_BG_LONG} if s["k"] == "cart" else {}),

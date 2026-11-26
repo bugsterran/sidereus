@@ -56,6 +56,9 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 /* ★Estimated window (learned from another session of the same model) — dashed line marks **weak evidence**.
    Solid = the session proved it itself (observed >200k or its own auto-compaction). The tooltip states the evidence. */
 .sc.est{border-bottom:1px dotted #4a5462}
+/* Compaction ETA (40ba sessUsage, «Compacts in ~N turns»); ⚠not in SX_DROP, so nowrap keeps it one chip. */
+.sce{font-size:10px;color:#8b95a7;flex:0 0 auto;white-space:nowrap}
+.sce.warn{color:#e0725f;font-weight:600}
 .sg{font-size:10px;color:#8ab4ff;flex:0 0 auto}
 .se{font-size:10px;color:#e0725f;font-weight:700;flex:0 0 auto}
 .sm{font-size:9.5px;color:#6b7688;flex:0 0 auto}
