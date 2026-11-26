@@ -472,6 +472,17 @@ class PlModel(unittest.TestCase):
             json.dump({"v": 1, "runs": runs, "past": past}, f)
         os.utime(fp, (NOW, NOW))
 
+    def test_past_run_stop_known_when_the_hook_wrote_it(self):
+        cur = self._r(t0=NOW - 100, st={"구현": {"s": "run", "t0": NOW - 90, "t1": NOW, "n": 1}}, lb=[])
+        ok = self._r(t0=NOW - 1000, t1=NOW - 900, end=NOW - 900, cur="구현", lb=[], stop=0,
+                     st={"구현": {"s": "done", "t0": NOW - 950, "t1": NOW - 900, "n": 1}})
+        hit = self._r(t0=NOW - 800, t1=NOW - 700, end=0, cur="구현", lb=[], stop=NOW - 700,
+                      st={"구현": {"s": "run", "t0": NOW - 790, "t1": NOW - 700, "n": 1}})
+        self._file_past({"sc": cur}, {"sc": [ok, hit]})
+        r = PR.pl_model(SID, self.sd, [], None, NOW, "run")[0]
+        self.assertEqual([(p["rid"], p["stop"], p["end"]) for p in r["past"]],
+                         [(NOW - 800, NOW - 700, NOW - 700), (NOW - 1000, 0, NOW - 900)])   # a stop also ends the run
+
     def test_past_runs_separate_entries(self):
         # R3: earlier runs of the same name are their own entries with start time, label and their own stage states.
         cur = self._r(t0=NOW - 100, st={"구현": {"s": "run", "t0": NOW - 90, "t1": NOW, "n": 1}}, lb=[])
@@ -487,7 +498,8 @@ class PlModel(unittest.TestCase):
         r = PR.pl_model(SID, self.sd, [], None, NOW, "run")[0]
         self.assertEqual((r["rid"], r["lab"], list(r["stages"])), (NOW - 100, "current one", ["구현"]))
         self.assertEqual([(p["rid"], p["lab"]) for p in r["past"]], [(NOW - 800, "second"), (NOW - 1000, "first request")])
-        self.assertEqual(set(r["past"][0]), {"rid", "t0", "t1", "end", "cur", "lab", "stages"})
+        self.assertEqual(set(r["past"][0]), {"rid", "t0", "t1", "end", "cur", "stop", "lab", "stages"})
+        self.assertEqual([p["stop"] for p in r["past"]], [None, None])   # archived before the hook kept `stop`: unknown
         self.assertEqual({k: v["o"] for k, v in r["past"][1]["stages"].items()}, {"설계": "done", "구현": "done"})   # closed idle
         self.assertEqual(r["past"][0]["stages"]["설계"]["o"], "fail")
         # Past stages list their window's tagged agents (meta only, never running); a3 is outside every past window.

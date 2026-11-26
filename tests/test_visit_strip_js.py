@@ -101,12 +101,22 @@ class VisitCollect(unittest.TestCase):
                 " const d = visitCollect(s, null, 900, 2000, visitDefs);" + out("[a, b, c, d.runs.map(r => r.vd), d.cms.length]"))
         self.assertEqual(d, ["unknown", "pass", "unknown", ["unknown"], 0])
 
-    def test_r1_past_run_never_pass_head_run_can_pass(self):
+    def test_r1_past_run_pass_only_when_stop_is_known(self):
         L = "['implement', 'review']"
         d = run("const L = " + L + ", S = {implement: {o: 'done'}, review: {o: 'done'}},"
-                " a = visitVerdict(S, 50, 0, L, 'review', true), b = visitVerdict({implement: {o: 'done'}, review: {o: 'fail'}}, 50, 0, L, 'review', true),"
-                " c = visitVerdict(S, 50, 0, L, 'review', false);" + out("[a, b, c]"))
-        self.assertEqual(d, ["unknown", "fail", "pass"])
+                " a = visitVerdict(S, 50, null, L, 'review', true), b = visitVerdict({implement: {o: 'done'}, review: {o: 'fail'}}, 50, null, L, 'review', true),"
+                " c = visitVerdict(S, 50, 0, L, 'review', false), e = visitVerdict(S, 50, 0, L, 'review', true), f = visitVerdict(S, 50, 40, L, 'review', true);" + out("[a, b, c, e, f]"))
+        self.assertEqual(d, ["unknown", "fail", "pass", "pass", "unknown"])
+
+    def test_r1_past_run_with_stop_key_counts_pass_and_its_commits(self):
+        # stop 0 = the hook kept it; end 0 + t1 = idle-replaced, dated by t1 but never proven finished
+        d = run("const s = [{sid: 's1', cwd: '/w/shop', plrun: [{name: 'change', proj: '/w/shop', rid: 1500, t0: 1500, t1: 1600, end: 0, cur: 'implement',"
+                " stages: {implement: {o: 'run', t1: 1600}}, past: ["
+                " {rid: 1000, t0: 1000, t1: 1100, end: 1100, stop: 0, cur: 'review', stages: {implement: {o: 'done', t1: 1050, cm: [1060]}, review: {o: 'done', t1: 1100}}},"
+                " {rid: 1200, t0: 1200, t1: 1300, end: 0, stop: 0, cur: 'review', stages: {review: {o: 'done', t1: 1300}}}]}]}];"
+                " PLS.data['/w/shop'] = {ok: true, pipelines: [{name: 'change', stages: [{title: 'implement'}, {title: 'review'}]}]};"
+                " const d = visitCollect(s, null, 900, 2000, visitDefs);" + out("[d.runs.map(r => [r.rid, r.vd]), d.cms.length]"))
+        self.assertEqual(d, [[[1200, "unknown"], [1000, "pass"]], 1])
 
     def test_r1_borrowed_definition_counts(self):
         d = run("PLS.data['/w/shop'] = {ok: true, pipelines: [], borrowed: [{name: 'change', from: '/w/o', stages: [{title: 'implement'}, {title: 'review'}]}]};"

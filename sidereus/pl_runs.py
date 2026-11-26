@@ -184,7 +184,10 @@ def _load_past(past, now):
         if isinstance(xs, list):
             rows = []
             for r in xs[-PLR_PAST_MAX:]:
-                rows += pl_runs_of("", now, _raw={name: r})
+                got = pl_runs_of("", now, _raw={name: r})
+                for g in got:
+                    g["sk"] = "stop" in r   # stop known: the hook writes the key on every new archive (hooks/pl_flow.py _archive)
+                rows += got
             if rows:
                 out[name] = sorted(rows, key=lambda r: -r["t0"])[:PLR_PAST_MAX]
     return out
@@ -348,7 +351,8 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
             if p["t0"] >= r["t0"]:
                 continue   # ⚠a past entry is never the current run itself (hook archives on a new open)
             plo, phi = p["t0"] - PLR_AG_SLACK_S, (p["end"] or p["t1"]) + PLR_AG_SLACK_S
-            ps = {"rid": p["t0"], "t0": p["t0"], "t1": p["t1"], "end": p["end"], "cur": p["cur"],
+            # `stop` None = archived before the hook kept it: a stopped run is indistinguishable from a finished one
+            ps = {"rid": p["t0"], "t0": p["t0"], "t1": p["t1"], "end": p["end"], "cur": p["cur"], "stop": p["stop"] if p.get("sk") else None,
                   "lab": _run_lab(byname.get(r["name"]), plo, phi), "stages": _stage_map(p)}
             _put_ag(ps["stages"], _meta_ags(byname, p, ps["stages"], plo, phi))   # ⚠without it a stage showed «Agents n» and no buttons
             _close_stale(ps, "idle", ())   # an archived run is over: nothing in it is live

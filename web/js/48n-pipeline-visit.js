@@ -21,12 +21,12 @@ function visitSave(r){
   if(typeof r.vd === 'number') o.vd = r.vd;
   try{ localStorage.setItem(VISIT_KEY, JSON.stringify(o)); return true; }catch(e){ softErr('ls', e); return false; }
 }
-// Run verdict: fail if any stage failed; pass only for a head run that ended, was not stopped, and whose `cur` is the definition's last stage done|skip.
-// ⚠Archived (past) runs are never pass: the hook keeps no `stop` for them and _close_stale turns a stopped/idle cur stage into done.
+// Run verdict: fail if any stage failed; pass only for a run that ended, was not stopped, and whose `cur` is the definition's last stage done|skip.
+// ⚠An archived (past) run with `stop` null was archived before the hook kept it: never pass, since _close_stale turns a stopped/idle cur stage into done.
 function visitVerdict(S, end, stop, titles, cur, past){
   const v = Object.values(S || {}).filter(s => s && typeof s === 'object');
   if(v.some(s => s.o === 'fail')) return 'fail';
-  if(past) return 'unknown';
+  if(past && stop == null) return 'unknown';
   const last = Array.isArray(titles) && titles.length ? titles[titles.length - 1] : null, c = last != null && cur === last ? (S || {})[cur] : null;
   return end > 0 && !stop && c && typeof c === 'object' && (c.o === 'done' || c.o === 'skip') ? 'pass' : 'unknown';
 }
@@ -70,7 +70,8 @@ function visitCollect(sess, attn, since, at, defs, now){
       const titles = typeof defs === 'function' ? defs(proj, String(r.name)) : null;
       const one = (q, past) => {
         const rid = q.rid != null ? q.rid : q.t0, end = +q.end || (past ? +q.t1 || 0 : 0), S = q.stages && typeof q.stages === 'object' ? q.stages : {};
-        const stop = past ? 0 : +q.stop || 0, vd = visitVerdict(S, end, stop, titles, q.cur, past), k = sid + '|' + r.name + '|' + rid;
+        // ⚠The verdict takes the stamped `end` only: the t1 fallback dates an idle-replaced past run but never proves it finished.
+        const stop = past && q.stop == null ? null : +q.stop || 0, vd = visitVerdict(S, +q.end || 0, stop, titles, q.cur, past), k = sid + '|' + r.name + '|' + rid;
         const base = { sid, name: String(r.name), proj, rid, cur, past, stage: String(q.cur || ''), vd };
         if(inW(end) && !sr.has(k)){ sr.add(k); runs.push(Object.assign({ k: 'run', t: end }, base)); }
         if(vd === 'fail' || (vd !== 'pass' && (end > 0 || stop))) return;   // commits count in a passed run or a still-open one only

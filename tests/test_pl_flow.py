@@ -493,7 +493,14 @@ class Flow(unittest.TestCase):
         self.assertEqual((r["t0"], set(r["st"]), r["end"]), (1010.0, {"요구사항"}, 0))
         self.assertEqual(len(past), 1)
         self.assertEqual((past[0]["end"], past[0]["st"]["라이브 검증"]["s"], len(past[0]["lb"])), (1010.0, "done", 2))
-        self.assertEqual(set(past[0]), {"st", "lb", "cur", "end", "t0", "t1"})   # only what pl_runs reads (size cap)
+        self.assertEqual(set(past[0]), {"st", "lb", "cur", "end", "t0", "t1", "stop"})   # only what pl_runs reads (size cap)
+        self.assertEqual(past[0]["stop"], 0)   # always written: its presence lets pl_runs judge the archived run
+
+    def test_archive_keeps_stop_and_drops_other_keys(self):
+        d = {"runs": {}}
+        H._archive(d, N, {"cur": "x", "end": 9.0, "stop": 7.0, "inflight": {"x": 1}})
+        H._archive(d, N, {"cur": "y", "end": 10.0})
+        self.assertEqual(d["past"][N], [{"cur": "x", "end": 9.0, "stop": 7.0}, {"cur": "y", "end": 10.0, "stop": 0}])
 
     def test_first_stage_skip_past_it_opens_new_run(self):
         self._with_req()

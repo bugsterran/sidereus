@@ -1535,7 +1535,7 @@ def _deny(why):
 
 
 PAST_MAX = 5   # replaced runs kept per pipeline in runs.json "past" (oldest first)
-PAST_KEYS = ("st", "lb", "cur", "end", "t0", "t1")   # ⚠only what pl_runs reads: runs.json over its read cap parses as nothing
+PAST_KEYS = ("st", "lb", "cur", "end", "t0", "t1", "stop")   # ⚠only what pl_runs reads: runs.json over its read cap parses as nothing
 
 
 def _archive(d, name, old):
@@ -1543,7 +1543,11 @@ def _archive(d, name, old):
     try:
         past = d["past"] if isinstance(d.get("past"), dict) else {}
         lst = [x for x in (past.get(name) if isinstance(past.get(name), list) else []) if isinstance(x, dict)]
-        lst.append({k: old[k] for k in PAST_KEYS if k in old})
+        ent = {k: old[k] for k in PAST_KEYS if k in old}
+        # ⚠`stop` is always written (0 = never stopped): its presence tells pl_runs this entry can be judged; entries
+        #   archived before it carry no key and stay «unknown», since a stopped run there looks finished.
+        ent["stop"] = old.get("stop") or 0
+        lst.append(ent)
         past[name] = lst[-PAST_MAX:]
         d["past"] = past
     except Exception:
