@@ -63,6 +63,12 @@ class VisitPinsEndedSessionRun(unittest.TestCase):
         r = run("SESS[0].state = 'run'; visitGo(%s); return [PLS.nowSid, plViewRun('/x/api', 'p').sid];" % json.dumps(HEAD))
         self.assertEqual(r, [X, X])
 
+    def test_pin_dropped_by_a_gone_session_marks_the_live_one(self):
+        # X live and pinned, then X leaves SESS: the canvas falls back to Y's live run, so Y's row is marked.
+        r = run("SESS[0].state = 'run'; visitGo(%s); const a = PLS.nowSid; SESS = SESS.filter(x => x.sid !== '%s');"
+                " const v = plViewRun('/x/api', 'p'); return [a, v.sid, PLS.nowSid, PLS.runSel];" % (json.dumps(HEAD), X))
+        self.assertEqual(r, [X, Y, Y, None])
+
     def test_back_from_a_menu_pick_keeps_the_mark(self):
         r = run("PLS.nowSid = 'kept'; PLS.runSel = {sid: '%s', name: 'p', rid: 1, cur: 2}; plBackCur(); return [PLS.nowSid, PLS.runSel];" % Y)
         self.assertEqual(r, ["kept", None])

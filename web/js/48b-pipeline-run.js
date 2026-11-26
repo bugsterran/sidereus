@@ -85,7 +85,7 @@ function plViewRun(proj, name){
   if(s && s.pin && s.name === name){
     const v = plPinRun(proj, s);
     if(v) return v;
-    if((SESS || []).length && PLS.data[proj]) PLS.runSel = null;   // run or session gone: back to the live view (⚠kept while a reload loads)
+    if((SESS || []).length && PLS.data[proj]) plBackCur();   // run or session gone: back to the live view and its «Working now» mark (⚠kept while a reload loads)
     return plLiveRun(proj, name);
   }
   const lv = plLiveRun(proj, name);
