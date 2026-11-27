@@ -40,13 +40,20 @@ function sessFit(box){
     box.classList.remove('sxd1', 'sxd2', 'sxd3');
     for(let i = 1; i <= lv; i++) box.classList.add('sxd' + i);   // cumulative: level n hides the first n of SX_DROP
     box.style.removeProperty('--sxusw');
-    px('--sxusw', mx('.sxus'));
+    // ⚠Capped at the row: a min-width 1px over a narrow pinned row scrolled the whole column sideways.
+    box.style.setProperty('--sxusw', Math.min(Math.ceil(mx('.sxus')) + 1, gw) + 'px');
     return fits();
   };
   let lv = 0;
   while(!level(lv) && lv < SX_DROP.length) lv++;
-  // ⚠Hide chips only when it buys one line: if level 3 still wraps, show everything and let groups wrap.
-  if(lv && !fits()) level(0);
+  // ⚠Hide chips only when it buys one line, or when a nowrap group is wider than the row (narrow pinned column):
+  // then keep the lowest level at which every group fits its own line; if none does, show everything.
+  if(lv && !fits()){
+    // ⚠scrollWidth, not the rect: .sxg max-width:100% caps the rect at the row while unshrinkable chips spill past it.
+    const within = () => rows.every(r => [...r.querySelectorAll('.sxg')].every(g => !g.firstChild || Math.max(bw(g), g.scrollWidth || 0) <= gw + 1));
+    for(lv = 0; lv <= SX_DROP.length; lv++){ level(lv); if(within()) break; }
+    if(lv > SX_DROP.length) level(0);
+  }
 }
 // Identity group tail: git chip (diff) for a row without a branch — with a branch, the branch chip opens the diff.
 function sessGitChip(x){

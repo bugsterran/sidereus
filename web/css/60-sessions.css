@@ -16,8 +16,9 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .sxl::before{content:'\200b';align-self:baseline;width:0;margin-right:-4px}
 .sxl .ailg{margin-right:0}
 .sxgs{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:2px;align-items:baseline;min-width:0}
-.sxg{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:baseline;flex:0 0 auto}
+.sxg{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:baseline;flex:0 0 auto;max-width:100%}
 .sxg > span{white-space:nowrap;flex:0 0 auto}
+.sxwk > .spl{flex-shrink:9}   /* ⚠a group capped at a narrow pinned row shrinks the pipeline chip (ellipsis), never wraps chips */
 .sxid{flex:0 0 var(--sxidw,auto);max-width:100%;min-width:0;overflow:hidden}
 .sxus{min-width:var(--sxusw,0)}
 .sxg .sxac{margin-left:8px}   /* nested action group: 6px gap + 8px = the 14px group gap */

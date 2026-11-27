@@ -111,15 +111,17 @@ class SessRowGroups(unittest.TestCase):
         self.assertEqual(run("console.log(JSON.stringify(SX_DROP));"), ["sz", "sk", "sm"])
 
 
-def fake(w, sp="null", sw=None):
+def fake(w, sp="null", sw=None, top=0):
     """Stub element: subpixel getBoundingClientRect width, integer-rounded offsetWidth/clientWidth (as browsers do).
-    `sw` = JS expression for scrollWidth (content past a max-width:100% clip); default = no scrollWidth."""
-    return ("{getBoundingClientRect: () => ({width: %s}), offsetWidth: Math.round(%s), clientWidth: Math.round(%s),%s"
-            " offsetTop: 0, offsetHeight: 16, firstChild: 1, querySelector: s => s === '.sp' ? %s : null}"
-            % (w, w, w, " get scrollWidth(){ return %s; }," % sw if sw else "", sp))
+    `sw` = JS expression for scrollWidth (content past a max-width:100% clip); default = no scrollWidth.
+    `w` may be a JS expression (re-read on every measure); `top` > 0 = the group wrapped under the identity."""
+    return ("{getBoundingClientRect: () => ({width: %s}), get offsetWidth(){ return Math.round(%s); },"
+            " get clientWidth(){ return Math.round(%s); },%s"
+            " offsetTop: %d, offsetHeight: 16, firstChild: 1, querySelector: s => s === '.sp' ? %s : null}"
+            % (w, w, w, " get scrollWidth(){ return %s; }," % sw if sw else "", top, sp))
 
 
-def fit(idw, gs=735, spw=None, idsw=None):
+def fit(idw, gs=735, spw=None, idsw=None, usw="120.2", ustop=0, ussw=None):
     """sessFit on two stub rows; returns the CSS props set on the box plus `_cls` = box classes left on."""
     return run(r"""const window = {};
 const props = {}, cls = [];
@@ -134,7 +136,7 @@ const box = {clientWidth: 791, style: {setProperty: (k, v) => { props[k] = v; },
 sessFit(box);
 props._cls = cls;
 console.log(JSON.stringify(props));
-""" % (fake(idw, fake(spw) if spw else "null", idsw), fake(120.2), fake(18.6), gs))
+""" % (fake(idw, fake(spw) if spw else "null", idsw), fake(usw, sw=ussw, top=ustop), fake(18.6), gs))
 
 
 def px(v):
@@ -166,6 +168,36 @@ class SessFitWidths(unittest.TestCase):
         self.assertEqual(fit(287.0, gs=287, spw=96.0, idsw="363")["_cls"], ["sxidc", "sxidn", "sxidh"])
         # levels stop at the first one that removes the overflow
         self.assertEqual(fit(287.0, gs=287, spw=96.0, idsw="cls.includes('sxidc') ? 287 : 363")["_cls"], ["sxidc"])
+
+    def test_wrapped_usage_keeps_drop_level_that_fits_row(self):
+        # pinned 253px row: usage 361px wraps under the identity at every level, but sxd3 shrinks it to 221 (< 253)
+        p = fit(200.0, gs=253, usw="cls.includes('sxd3') ? 221 : 361", ustop=20)
+        self.assertEqual(p["_cls"], ["sxd1", "sxd2", "sxd3"])
+        self.assertLessEqual(px(p["--sxusw"]), 254)
+        # min-width var never exceeds the row (252.4 -> ceil + 1 = 254 would overflow a 253px row)
+        self.assertLessEqual(px(fit(200.0, gs=253, usw="cls.includes('sxd3') ? 252.4 : 361", ustop=20)["--sxusw"]), 253)
+        # wider than the row even at level 3: show everything
+        self.assertEqual(fit(200.0, gs=253, usw="300", ustop=20)["_cls"], [])
+        # wraps but fits its own line at level 0: nothing hides
+        self.assertEqual(fit(200.0, gs=253, usw="120.2", ustop=20)["_cls"], [])
+
+    def test_capped_group_measured_by_content(self):
+        # .sxg max-width:100% caps the rect at the 253px row; the spill (scrollWidth) still decides the drop level
+        p = fit(200.0, gs=253, usw="253", ussw="cls.includes('sxd3') ? 221 : 361", ustop=20)
+        self.assertEqual(p["_cls"], ["sxd1", "sxd2", "sxd3"])
+        self.assertEqual(fit(200.0, gs=253, usw="253", ussw="300", ustop=20)["_cls"], [])   # spills at every level
+
+    def test_non_usage_group_capped_at_row(self):
+        # the work group (model · pipeline · To-do · actions) has no drop level: it is capped at the row and the
+        # pipeline chip ellipsizes instead of pushing the pinned column sideways
+        with open(os.path.join(ROOT, "web", "css", "60-sessions.css"), encoding="utf-8") as fh:
+            css = re.sub(r"/\*.*?\*/", "", fh.read(), flags=re.S)
+        m = re.search(r"(?m)^\.sxg\{([^}]*)\}", css)
+        self.assertIsNotNone(m)
+        self.assertIn("max-width:100%", m.group(1))
+        m = re.search(r"\.sxwk > \.spl\{([^}]*)\}", css)
+        self.assertIsNotNone(m)
+        self.assertRegex(m.group(1), r"flex-shrink:[1-9]")
 
     def test_fitting_identity_keeps_no_collapse_class(self):
         self.assertEqual(fit(225.4)["_cls"], [])
