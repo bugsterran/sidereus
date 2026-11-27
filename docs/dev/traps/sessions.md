@@ -342,6 +342,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**Same column: work group `.sxwk` 325px, 53px past the edge at 320 (13px at 360)** — no drop level touches it and `.sxg > span{flex:0 0 auto}` kept the pipeline chip `.spl` from shrinking.
   ⇒ `.sxg{max-width:100%}` caps every group at the row and `.sxwk > .spl{flex-shrink:9}` lets the pipeline chip ellipsize; below the cap nothing shrinks, so wider columns are unchanged. Test `test_non_usage_group_capped_at_row`.
   ⚠Do not fix this with `flex-wrap` on `.sxg`/`.sxid` (SxidNoWrap): groups wrap whole, and the identity folds only through `SX_COLLAPSE`. ⚠`within` must read `scrollWidth`: the capped rect never exceeds the row.
+- ★**Same column: «Recently ended sessions» rows `.srecr` 197px past the edge at 320** — the row was a nowrap flex line whose fixed chips + two buttons need ~440px (it already overflowed 45px at 420, with the branch squeezed to 0px).
+  ⇒ `.srec .srecr{flex-wrap:wrap;row-gap:2px}` (92-sessions-drawer.css): measured column scrollWidth 516 → 318 (= clientWidth); at 704 no row changes height. Test `tests/test_sesrec_row_wrap_css.py`.
+  ⚠Do not go back to nowrap to keep rows one line: under ~440px that only moves the buttons out of view.
 - **Ended external CLI rows stay in `_ext`** (`ext_store._end_locked`: state `done`, `ended`, `endWhy` end|pid|silent) so they appear under «Recently ended sessions» for `EXT_DONE_KEEP_S` (12 h).
   ⇒ Liveness readers skip `ended` rows (`timeline_ext` live/items, `ext_usage_today`); `ext_ended()` returns them so rollout/presence rows stay hidden. Test `tests/test_ext_ended_fold.py`.
   ⚠A new reader of `_ext` that counts open sessions must filter `ended`. ⚠`EXT_DONE_KEEP_S` must equal `sessions.sessions()` `max_age_h` (guarded in the test).

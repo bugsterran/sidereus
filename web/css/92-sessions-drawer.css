@@ -68,7 +68,8 @@ html[data-ui=next] body.sesopen:not(.sespin) #sesrz{display:block;position:fixed
 .srec .srecc{width:12px;display:inline-block}
 .srec .srecn{font-weight:600;font-size:11px;padding:0 5px;border-radius:8px;background:var(--nx-hover,#2a2a2a);border:1px solid var(--nx-rule,#333)}
 .srec .srecf{width:100%;box-sizing:border-box;margin:2px 0 4px;font:inherit;padding:3px 6px}
-.srec .srecr{display:flex;align-items:center;gap:6px;padding:3px 2px;border-radius:4px;min-width:0}
+/* ⚠Wrap, never nowrap: the fixed chips + two buttons are ~440px, so a pinned column under that scrolled sideways (320px: 197px past the edge) */
+.srec .srecr{display:flex;flex-wrap:wrap;row-gap:2px;align-items:center;gap:6px;padding:3px 2px;border-radius:4px;min-width:0}
 .srec .srecr:hover{background:var(--nx-hover,#2a2a2a)}
 .srec .srecnm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:40%;flex:none}
 /* ⚠Branch gives way first (max-width + shrink 9): a long branch squeezed the name to 20px and the description to 0 */
