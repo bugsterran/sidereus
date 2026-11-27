@@ -71,6 +71,18 @@ def _ui_ok(u):
         "color" not in u or (isinstance(u["color"], str) and bool(_COLOR.fullmatch(u["color"]))))
 
 
+BUDGET_TOK_MAX = 10 ** 12   # = pl_outcome._tok clamp
+
+
+def budget_tok(P):
+    """Token budget per run from `"budget": {"tok": N}`, or None when absent or malformed (only key tok, int >= 1, not bool)."""
+    b = P.get("budget") if isinstance(P, dict) else None
+    if not (isinstance(b, dict) and set(b) == {"tok"}):
+        return None
+    t = b["tok"]
+    return t if isinstance(t, int) and not isinstance(t, bool) and 1 <= t <= BUDGET_TOK_MAX else None
+
+
 def validate(P, name):
     """Error list for pipeline dict P stored as `<name>.json` — a port of the runner's validate block."""
     if not isinstance(P, dict):
@@ -92,6 +104,8 @@ def validate(P, name):
         errs.append("readonly: true|false")
     if "catch" in P and P["catch"] != "person":   # bug-fix pipeline: its runs count as «Found by a person first» (harness_person)
         errs.append('catch: "person"')
+    if "budget" in P and budget_tok(P) is None:   # display-only token budget per run (pl_outcome.run_cost); never stops a run
+        errs.append("budget: {tok: positive integer}")
     D =P.get("defaults") if isinstance(P.get("defaults"), dict) else {}
     if D.get("model") not in MODELS:
         errs.append("defaults.model: inherit|opus|sonnet|haiku")

@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: after the viewer was hidden or closed for 10 minutes or more, a «Since your last visit» strip counts runs finished (gate passed / failed), commits after a pass, sessions waiting on a person and sessions that ended; each count opens its evidence, and «Dismiss» closes it.
 - Sessions and Pipelines: a session row shows «No prompts» when its permission mode runs tools without approval prompts (`bypassPermissions`, `auto`, `dontAsk`), and the Watch result pane says when a pipeline run ran in such a mode.
 - Sessions: a Claude Code session row shows «Compacts in ~N turns», roughly how many turns are left before auto-compaction, from its recent context growth; the hint turns red at 3 turns or fewer and its tooltip gives the compaction point, the current context and the growth per turn. No hint shows when auto-compaction is off or there is too little history to tell.
+- Pipelines: an optional `"budget": {"tok": N}` in a pipeline file adds «of budget N (P%)» and «Over budget» to the «Stage cost» last run, and «Over budget in k of m runs» for the last 30 days. Display only; a run is never stopped.
 - API: `GET /api/v1/state` sessions now list their recent pipeline runs (`runs`: the current run and up to 5 earlier ones per pipeline) with each stage's state and a pass, fail or unknown verdict, judged the same way as the «Since your last visit» strip.
 
 ### Changed

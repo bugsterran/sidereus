@@ -534,3 +534,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: the run verdict exists twice — 48n `visitVerdict` (strip) and `state_v1.verdict` (`GET /api/v1/state` `sessions[].runs`); state_v1 reads definitions itself (`V1_DEFS`, `_def_dirs`) because it may not import `pipeline`.
 - ⇒ Change both together with `tests/fixtures/verdict_vectors.json`, the shared vector table both sides must pass.
 - ⚠state_v1 `_def_ok` mirrors the `pipeline_schema.validate` subset that gates titles (v, name = stem, title, defaults, stage title/agent/uniqueness) and skips a CODE_DIR builtin as `pipeline._listed` does; a server more lenient than the strip answered pass where it said unknown. Still differs: optional stage keys, custom-stage `task` and `guards` are not checked (server can still be more lenient there), and hints are not limited to known projects nor is the «first known project» fallback used. Never import `pipeline`/`pipeline_schema` into state_v1 (feature_couplings); `tests/test_state_v1.py` `test_def_ok_never_more_lenient_than_schema`.
+
+## Run token budget (`pipeline_schema.budget_tok` → `pl_outcome.outcome(tok_budget=)` → `counts()["cost"]["bud"]`)
+- Cause: `outcome()` is memoised on HEAD, evidence, ledger mtime and a 10-min bucket; a budget edit changes none of them.
+- ⇒ The budget is part of the `_OC_MEMO` key, else the old «of budget» line stays up to 10 min.
+- ⚠Over-budget counts runs with any known tok only: an all-unknown run is never «over»; a partly unknown run counts its known part (lower bound), same as `run_cost` med.
+- ⚠pl_outcome never imports `pipeline`/`pipeline_schema` (STAGE3 order): the budget arrives as a plain int from `pl_eval_view`. No budget = no `bud` key, so the panel shows no budget text. `tests/test_pl_budget.py`.

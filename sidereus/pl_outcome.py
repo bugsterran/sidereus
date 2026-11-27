@@ -63,7 +63,7 @@ OC_VERDICT = {
     "healthy": "No pass broke, enough runs, loop-backs steady.",
 }
 OC_VERDICT_MIN_RUNS = 5
-_OC_MEMO = {}   # (repo, name, review, HEAD, newest evidence ts, ledger mtime, 10-min bucket, fix pipes) -> outcome
+_OC_MEMO = {}   # (repo, name, review, HEAD, newest evidence ts, ledger mtime, 10-min bucket, fix pipes, tok budget) -> outcome
 _now = time.time
 
 
@@ -166,10 +166,15 @@ def stage_eff(rows):
     return {t: {"n": len(s), "sec": _med(s), "tok": _med(k), "tn": len(k)} for t, (s, k) in acc.items()}
 
 
-def run_cost(rows):
+def _bud_tok(v):
+    return v if _tok(v) is not None and v >= 1 else None
+
+
+def run_cost(rows, tok_budget=None):
     """{share: {title: pct}, med, mn, last: {tok, sec}} over ledger rows (oldest first), or None for no rows.
     Same stage loop as stage_eff so titles match. ⚠Unknown tok is left out, never counted as 0: a run with no known
-    tok is not in med/mn, and last.tok is None."""
+    tok is not in med/mn, and last.tok is None. With a valid `tok_budget` (int >= 1, pipeline "budget.tok") adds
+    bud: {tok, over, m} — over = runs whose known tok exceeds it, m = runs with any known tok (display only)."""
     if not rows:
         return None
     acc, per, last, kn = {}, [], None, set()
@@ -191,7 +196,11 @@ def run_cost(rows):
     share = {t: int(v * 100 / tot + 0.5) for t, v in acc.items() if t in kn} if tot else {}
     r = rows[-1] or {}
     sec = int(max(0, (r.get("end") or 0) - (r.get("t0") or 0)))
-    return {"share": share, "med": _med(per), "mn": len(per), "last": {"tok": last, "sec": sec}}
+    out = {"share": share, "med": _med(per), "mn": len(per), "last": {"tok": last, "sec": sec}}
+    bt = _bud_tok(tok_budget)
+    if bt is not None:   # ⚠per holds known runs only: an all-unknown run is never «over», a partial one counts its lower bound
+        out["bud"] = {"tok": bt, "over": sum(1 for x in per if x > bt), "m": len(per)}
+    return out
 
 
 def _ledger_path(key):
@@ -348,9 +357,10 @@ def _isfix(ct, every, fix, own):
     return o is not None and o["name"] in fix and id(o) not in own
 
 
-def outcome(proj, name, review_titles, now=None, git=True, fix=()):
+def outcome(proj, name, review_titles, now=None, git=True, fix=(), tok_budget=None):
     """{proc: {runs, jump}, lb: {cur: {n, k}, prev: {n, k}}, result: {n, broke, fixed, list: [{sha, files, broke, fixed}]}}.
     `fix` = bug-fix pipeline names (`pipeline.fix_pipes`), passed in: this core module must not import the pipeline feature.
+    `tok_budget` = the pipeline's "budget.tok" (pipeline_schema.budget_tok), passed in for the same reason.
     ⚠`list` carries file names: the report writes it, the API body drops it (pl_eval_view)."""
     now = _now() if now is None else now
     key = repo_key(proj)
@@ -369,13 +379,15 @@ def outcome(proj, name, review_titles, now=None, git=True, fix=()):
         mt = os.path.getmtime(_ledger_path(key))
     except OSError:
         mt = 0
-    ck = (os.path.realpath(proj), name, tuple(sorted(review)), head, rows[0]["ts"] if rows else 0, mt, int(now // 600), tuple(fix))
+    tb = _bud_tok(tok_budget)
+    # ⚠tb in the key: a budget edit changes no ledger/evidence/HEAD, so the old «of budget» line would stay up to 10 min
+    ck = (os.path.realpath(proj), name, tuple(sorted(review)), head, rows[0]["ts"] if rows else 0, mt, int(now // 600), tuple(fix), tb)
     if head and ck in _OC_MEMO:
         return _OC_MEMO[ck]
     out = {"proc": {"runs": len(cur), "jump": sum(r["dc"].get("jump", 0) for r in cur)},
            "lb": {"cur": _lb(cur, review), "prev": _lb(prev, review)},
            "result": _result(proj, rows, cur + prev, now, bool(head), every, fix), "eff": stage_eff(cur),
-           "cost": run_cost(cur)}
+           "cost": run_cost(cur, tb)}
     if head:
         if len(_OC_MEMO) >= OC_CACHE_MAX:
             _OC_MEMO.clear()
@@ -405,6 +417,9 @@ def counts(oc):
         out["cost"] = {"share": {_title(t): min(100, _int(v)) for t, v in sh.items() if _title(t) in eff},
                        "med": _tok(co.get("med")), "mn": _int(co.get("mn")),
                        "last": {"tok": _tok(la.get("tok")), "sec": _int(la.get("sec"))}}
+        bd = co.get("bud")
+        if isinstance(bd, dict) and _bud_tok(bd.get("tok")) is not None:   # absent without a budget: no budget text at all
+            out["cost"]["bud"] = {"tok": bd["tok"], "over": min(_int(bd.get("over")), _int(bd.get("m"))), "m": _int(bd.get("m"))}
     out["verdict"] = _verdict(out)
     return out
 

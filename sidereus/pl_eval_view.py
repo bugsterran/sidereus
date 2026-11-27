@@ -10,7 +10,7 @@ import time
 
 from sidereus import config, gitinfo, pipeline, pipeline_projects, pl_scorecard
 from sidereus.arch_verify import COMMIT_RE, repo_key
-from sidereus.pipeline_schema import gate_mode
+from sidereus.pipeline_schema import budget_tok, gate_mode
 from sidereus.warn import warn_once
 
 EV_VERDICTS = ("pass", "fail", "skip", "none")
@@ -187,13 +187,14 @@ def fix_pipes(proj):
     return pipeline.fix_pipes(proj)
 
 
-def _outcome(proj, name, stages):
+def _outcome(proj, name, stages, tok_budget=None):
     """(outcome, rep) for the result layer, (None, None) when pl_outcome is absent or fails."""
     m = _oc()
     if m is None:
         return None, None
     try:
-        return m.outcome(proj, name, review_titles(stages), _now(), fix=fix_pipes(proj)), m.latest_report(proj, name)
+        kw = {"tok_budget": tok_budget} if tok_budget is not None else {}   # no budget = the call is unchanged
+        return m.outcome(proj, name, review_titles(stages), _now(), fix=fix_pipes(proj), **kw), m.latest_report(proj, name)
     except Exception as e:
         warn_once("pl_outcome", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
         return None, None
@@ -275,7 +276,7 @@ def pl_eval(proj, name):
         sec = pl_scorecard.scorecard(proj, commit)
     except Exception as e:   # independent of the eval core: shown even when pl_eval is absent
         warn_once("pl_scorecard", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
-    oc, rp = _outcome(proj, name, stages)
+    oc, rp = _outcome(proj, name, stages, budget_tok(P))
     pe = _pe()
     if pe is None:
         return 200, body(name, titles, None, None, None, commit, sec=sec, outcome=oc, rep=rp)

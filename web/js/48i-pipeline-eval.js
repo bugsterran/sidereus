@@ -112,7 +112,7 @@ function plEvalOutcome(ev, name){
   return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + (typeof plEvalVerdict === 'function' ? plEvalVerdict(o, name) : '') + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' + plEvalEff(o.eff, o.cost) + '<div class=pleocr>' + esc(rp) + (path ? '<span class=pleocp>' + esc(path) + '</span>' : '') + '</div></div>';
 }
 // Pure: «Stage cost» table (pl_outcome.stage_eff) — median time, median known tokens, share, runs; unknown tokens are «—», never 0.
-// cost (R1-R3, optional): {share:{title:pct}, med, mn, last:{tok, sec}}; all-unknown runs are excluded server-side (mn 0 = no median line).
+// cost (R1-R3, optional): {share:{title:pct}, med, mn, last:{tok, sec}, bud?:{tok, over, m}}; all-unknown runs are excluded server-side (mn 0 = no median line).
 function plEvalEff(eff, cost){
   const E = eff && typeof eff === 'object' ? Object.entries(eff) : [];
   if(!E.length) return '';
@@ -120,13 +120,21 @@ function plEvalEff(eff, cost){
   const tk = v => v != null ? (typeof fmtTok === 'function' ? fmtTok(+v) : String(+v)) : '—';
   const C = cost && typeof cost === 'object' ? cost : {}, sh = C.share && typeof C.share === 'object' ? C.share : {};
   const shr = t => Object.prototype.hasOwnProperty.call(sh, t) && sh[t] != null ? String(+sh[t]) + '%' : '—';
-  const L = [];
-  if(C.mn > 0 && C.med != null) L.push(TV({msg: 'Median per run: {tok} tokens ({n} runs)', vars: {tok: tk(C.med), n: C.mn | 0}}));
-  if(C.last && typeof C.last === 'object') L.push(TV({msg: 'Last run: {tok} · {dur}', vars: {tok: tk(C.last.tok), dur: dur((C.last.sec) | 0)}}));
+  const L = [], B = C.bud && typeof C.bud === 'object' && +C.bud.tok > 0 ? C.bud : null;   // L holds escaped HTML pieces
+  if(C.mn > 0 && C.med != null) L.push(esc(TV({msg: 'Median per run: {tok} tokens ({n} runs)', vars: {tok: tk(C.med), n: C.mn | 0}})));
+  if(C.last && typeof C.last === 'object'){
+    const lt = C.last.tok;   // ⚠unknown (null) tokens: budget shown without percent or mark, never as within budget
+    // Over rounds up, within rounds down: plain rounding showed «100%» both with and without the over mark near the line.
+    const pc = lt == null || !B ? 0 : +lt > +B.tok ? Math.ceil(+lt * 100 / +B.tok) : Math.floor(+lt * 100 / +B.tok);
+    L.push(esc(TV({msg: 'Last run: {tok} · {dur}', vars: {tok: tk(lt), dur: dur((C.last.sec) | 0)}}))
+      + (!B ? '' : lt == null ? esc(' · ' + TV({msg: 'of budget {b}', vars: {b: tk(B.tok)}}))
+        : esc(' · ' + TV({msg: 'of budget {b} ({p}%)', vars: {b: tk(B.tok), p: pc}})) + (+lt > +B.tok ? ' <span class=pleover>' + esc(T('Over budget')) + '</span>' : '')));
+  }
+  if(B && B.m > 0) L.push(esc(TV({msg: 'Over budget in {k} of {m} runs', vars: {k: B.over | 0, m: B.m | 0}})));
   return '<table class=pleeff><caption>' + esc(T('Stage cost (last 30 days)')) + '</caption><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Median time')) + '</th><th>' + esc(T('Median tokens')) + '</th><th>' + esc(T('Share')) + '</th><th>' + esc(T('Runs')) + '</th></tr>'
     + E.map(([t, e]) => '<tr><td>' + esc(typeof plgShow === 'function' ? plgShow(t) : t) + '</td><td>' + esc(dur((e && e.sec) | 0)) + '</td><td>'
       + esc(tk(e && e.tok != null ? e.tok : null)) + '</td><td>' + esc(shr(t)) + '</td><td>' + esc(String((e && e.n) | 0)) + '</td></tr>').join('') + '</table>'
-    + (L.length ? '<div class=pleeffs>' + L.map(x => '<div>' + esc(x) + '</div>').join('') + '</div>' : '');
+    + (L.length ? '<div class=pleeffs>' + L.map(x => '<div>' + x + '</div>').join('') + '</div>' : '');
 }
 function plEvalPanel(ev){
   if(!ev) return '';

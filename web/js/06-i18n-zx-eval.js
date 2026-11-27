@@ -61,4 +61,8 @@ Object.assign(I18N.ko, {
   'Median tokens': '토큰 중앙값',
   'Median per run: {tok} tokens ({n} runs)': '실행당 중앙값: 토큰 {tok} (실행 {n}회 기준)',
   'Last run: {tok} · {dur}': '최근 실행: {tok} · {dur}',
+  'of budget {b} ({p}%)': '예산 {b} 대비 {p}%',
+  'of budget {b}': '예산 {b}',
+  'Over budget': '예산 초과',
+  'Over budget in {k} of {m} runs': '실행 {m}회 중 {k}회 예산 초과',
 });
