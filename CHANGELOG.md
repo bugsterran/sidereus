@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-27
+
+**Highlights**
+
+- Pipelines: a «Since your last visit» strip sums up what happened while the viewer was hidden or closed (runs passed or failed, commits after a pass, sessions waiting on a person, sessions that ended), each count opening its evidence.
+- Sessions and Timeline: in time zones with daylight saving time, Claude Code transcript times are no longer one hour off, so waits, idle times and timeline bars line up with the clock.
+- Pi: a session no longer disappears from every list once its session file grows past 64 MB.
+
 ### Added
 
 - Pipelines: after the viewer was hidden or closed for 10 minutes or more, a «Since your last visit» strip counts runs finished (gate passed / failed), commits after a pass, sessions waiting on a person and sessions that ended; each count opens its evidence, and «Dismiss» closes it.
@@ -31,6 +39,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sweep world: the fixture writes compact JSON transcripts, so its timeline shows bars again.
 - API: `--demo` answers `GET /api/v1/*` with 404 `{"error": "not available in demo mode"}` instead of a 200 body that does not match the v1 schema.
 - Sessions: with the drawer pinned at narrow widths, branch, folder and hooks chips shrink to «…» instead of sticking out past the row edge.
+- Sessions: the pinned Sessions column no longer scrolls sideways at its 320 px minimum; wide session-row groups and «Recently ended sessions» rows wrap, and subagent rows shrink a long tool name or «quiet» to «…» (the full tool name is in the tooltip).
+- Pipelines: a run clicked in «Since your last visit» opens that session's own run instead of another live run of the same pipeline, and «Working now» marks the pinned session, returning to the live run's session when the pin ends.
+- Pipelines: a run replaced by a newer one now gets a pass or fail verdict in «Since your last visit» and counts its commits after a pass, instead of always showing as unknown; runs archived before plugin 0.9.10 stay unknown.
 
 ## [0.23.0] - 2026-11-25
 
@@ -1216,7 +1227,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/bugsterran/sidereus/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/bugsterran/sidereus/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/bugsterran/sidereus/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/bugsterran/sidereus/compare/v0.20.0...v0.21.0
