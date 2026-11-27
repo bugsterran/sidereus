@@ -123,12 +123,14 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .spm{flex:0 5 auto;min-width:3ch;font-size:9.5px;color:#f59e0b;border:1px solid #5a4a24;border-radius:3px;padding:0 3px;margin-right:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .s-wait .sl.swait{color:#7ad4a0}
 /* Subagent silence indicator — not a verdict, only shows how quiet it has been */
-.stq{flex:0 0 auto;font-size:9.5px;color:#7e8896;border:1px solid #262e3b;border-radius:9px;padding:0 5px}
+/* ⚠Shrinks (min 3ch) so a narrow pinned Sessions column (320px) never scrolls sideways; title keeps the full text */
+.stq{flex:0 1 auto;min-width:3ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;color:#7e8896;border:1px solid #262e3b;border-radius:9px;padding:0 5px}
 .stqc{color:#c9a24a;border-color:#5a4a24}
 .stiw.stcold{opacity:.62}
 .stiw.stcold:hover{opacity:1}
 /* Tool the agent is running now — inline on the agent row (was its own .stn line, one extra line per agent) */
-.sti .tn{flex:0 0 auto;font-size:10px;color:#8b95a7}
+/* ⚠MCP tool names run to ~40-60 chars (256-357px at 10px) and pushed a 300px row 132-315px wide; ellipsis + title instead */
+.sti .tn{flex:0 1 auto;min-width:min(4ch,20%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#8b95a7}
 .sti .tg{flex:0 1 auto;min-width:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   color:#9ccc8f;background:#181c22;border:1px solid #232a33;border-radius:3px;padding:0 4px}

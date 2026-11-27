@@ -338,7 +338,7 @@ function sessKid(kind, cls2, items){
       const tool = i < 0 ? String(v.now) : String(v.now).slice(0, i);
       const targ = i < 0 ? '' : String(v.now).slice(i + 3);
       // Inline on the agent row so every row stays one line (QA 2026-09-27: «Bash» wrapped onto its own line)
-      sub2 = '<span class=tn>'+esc(tool)+'</span>'
+      sub2 = '<span class=tn title="'+esc(tool)+'">'+esc(tool)+'</span>'
         + (targ ? '<code class=tg title="'+esc(targ)+'">'+esc(targ)+'</code>' : '');
     }
     // ★With a tid (= subagent), click to view that agent's footsteps in a modal (2026-08-27)

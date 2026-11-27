@@ -442,3 +442,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the same count of sessions in the Attention list showed as «Attention» on the rail and «need you» in the header, drawer, worktree rows and timeline, with four different Korean words between them.
 - ⇒ Every place that shows that count reads «Attention» (one ko entry, `06-i18n-zu-rail.js`); «Needs your response» / «Needs you» stays only for rows that wait on an answer.
 - ⚠Do not reintroduce «need you» for the count; the i18n check fails on a T() literal without a ko entry.
+
+## Subagent row overflows a narrow pinned column (`web/css/60-sessions.css` `.sti .tn` · `.stq`)
+- Cause: the running tool name (`.tn`) and the «quiet» chip (`.stq`) were `flex:0 0 auto`; an MCP tool name (~40-60 chars) alone is 256-357px.
+- ⇒ Both shrink with an ellipsis (`.tn` min `min(4ch,20%)`, `.stq` min 3ch); `.tn` carries the full name as its title. Test `tests/test_sess_agent_row_shrink_css.py`.
+- ★Injected rows at 300px: overflow 132 / 315 / 15px → 0; at 560px nothing is cut.
+- ⚠Do not set `flex:0 0 auto` back on either; the pinned Sessions column can be dragged down to 320px.
