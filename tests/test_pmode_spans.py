@@ -37,7 +37,8 @@ class Spans(unittest.TestCase):
         shutil.rmtree(self.d)
 
     def write(self, s, mode="w"):
-        with open(self.fp, mode) as f:
+        # newline="": Windows text mode writes CRLF, so the appended byte count would be one more per line
+        with open(self.fp, mode, encoding="utf-8", newline="") as f:
             f.write(s)
 
     def count_reads(self):

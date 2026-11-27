@@ -66,17 +66,19 @@ class Save(unittest.TestCase):
         d = os.path.join(self.proj, ".claude", "pipelines")
         os.makedirs(d)
         self.path = os.path.join(d, "flow.json")
-        with open(self.path, "w", encoding="utf-8") as f:
+        # newline="": text mode on Windows writes CRLF, and save() hashes the file bytes (base would never match)
+        with open(self.path, "w", encoding="utf-8", newline="") as f:
             f.write(SC.dump(PIPE))
         patch(self, PL, "_proj_ok", lambda p: p == self.proj)
         patch(self, PL, "_bak_dir", lambda: os.path.join(self.tmp, "bak"))
         patch(self, PL, "_strftime", lambda fmt: "20260101-000000")
 
     def save(self, **req):
-        raw = open(self.path, encoding="utf-8").read()
+        with open(self.path, encoding="utf-8", newline="") as f:
+            raw = f.read()
         code, b = PL.save(dict(req, proj=self.proj, name="flow", base=PL._sha(raw), dry=False))
         self.assertEqual(code, 200, b)
-        with open(self.path, encoding="utf-8") as f:
+        with open(self.path, encoding="utf-8", newline="") as f:
             return f.read()
 
     def test_r1_stage_edit_keeps_budget(self):
