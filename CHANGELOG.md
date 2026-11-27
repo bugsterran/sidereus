@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: worktree session sub-rows show the «Compacts in ~N turns» warning when 3 turns or fewer remain.
 - Sessions: «Compacts in ~N turns» no longer counts from zero when the newest transcript part has no response yet, which showed about 20 turns for a session already at the window.
 - Sweep world: the fixture writes compact JSON transcripts, so its timeline shows bars again.
+- API: `--demo` answers `GET /api/v1/*` with 404 `{"error": "not available in demo mode"}` instead of a 200 body that does not match the v1 schema.
 
 ## [0.23.0] - 2026-11-25
 

@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Server, /api/state payload, caching, performance
 
+- **`--demo` answered `GET /api/v1/state` with 200 `{"ok": true}`** (`sidereus/demo_http.py` `respond`). Cause: unknown demo paths fall to a generic stub, and `state_v1` builds from live state only — a program reading the demo got a body with 5 schema errors.
+  - ⇒ `/api/v1/*` in the demo is 404 `{"error": "not available in demo mode"}`. Test `tests/test_demo_v1_state.py`.
+  - ⚠A new versioned endpoint must not fall to the stub either: refuse it in the demo or build it from the demo world.
+
 - ★**`_ps_snap` reads `ps -Ao pid=,ppid=,pcpu=,rss=,command=` by position** (2026-11-04, `sidereus/live_probe.py` `_ps_snap`, split `split(None, 4)`).
   - ⚠`command` must stay the last column — it holds spaces; any column after it is swallowed into the command. Adding a column = insert it before `command` and bump the split count.
   - ⚠Rows stay `(pid, ppid, cmd)` 3-tuples (~10 callers unpack them); pcpu/rss go to `_ps_res` for `proc_load`. pcpu may use a decimal comma.

@@ -113,6 +113,10 @@ def respond(world, path, u):
         return 200, demo_tree(_q(u, "path"))
     if path == "/api/structure/file":
         return 200, demo_file(_q(u, "path"), _q(u, "file"), _q(u, "line", "1"))
+    if path.startswith("/api/v1/"):
+        # ⚠state_v1 builds from live state only; the generic stub below would pass for a schema-less v1 answer,
+        # so a program reading the demo gets a plain refusal instead.
+        return 404, {"error": "not available in demo mode"}
     return 200, {"ok": True}
 
 

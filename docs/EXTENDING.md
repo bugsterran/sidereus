@@ -158,5 +158,7 @@ Tests: `tests/test_verdict_guide.py` (every id the server emits needs a file).
   (end stamped, not stopped, `cur` = the definition's last stage done or skipped), `fail` (a stage failed) or
   `unknown` (definition unreadable, or an older archived run). A session with no runs has no `runs` key.
 - Host must be `127.0.0.1:<port>` or `localhost:<port>`; browser cross-site and same-site requests are refused.
+- `--demo` answers `/api/v1/*` with 404 `{"error": "not available in demo mode"}`; v1 is built from live state only.
+  Test against `examples/state.v1.full.json` instead.
 - ⚠v1 is metadata only and omits fields derived from tool input (`targ`, `blocked`). Never add a field that can carry
   message or tool content.

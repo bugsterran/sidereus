@@ -151,5 +151,7 @@ Who acts 가 `owner` 면 필수.
   `/api/state` 와 `/api/messages` 는 내부용이다(`n` 기본 200, 상한 1000, 0 이하는 400).
 - v1 에는 선택 필드를 더할 수 있다. 필드를 빼거나 이름·뜻을 바꾸면 v2 다.
 - Host 는 `127.0.0.1:<port>` 나 `localhost:<port>` 여야 하고, 브라우저의 cross-site·same-site 요청은 거부한다.
+- `--demo` 는 `/api/v1/*` 에 404 `{"error": "not available in demo mode"}` 로 답한다. v1 은 실제 상태로만 만든다.
+  시험은 `examples/state.v1.full.json` 으로 한다.
 - ⚠v1 은 메타데이터만 담고 도구 입력에서 나온 필드(`targ`, `blocked`)는 뺀다. 메시지나 도구 내용을 담을 수 있는 필드는
   더하지 않는다.
