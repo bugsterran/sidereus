@@ -38,6 +38,12 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 /* ⚠No % floor on .sbt: min(6ch,100%) sized as 0 for the chip but 6ch at layout, so «dev» spilled over .sacb */
 .sx .sb .sbt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .sx .sb .sbg{flex:none;font-size:10px}
+/* ⚠Collapse levels (40ba SX_COLLAPSE, box classes) only when an identity overflows the row with the name at 96px: chips shrink to a floor, never wrap.
+   Branch = grid so its floor is 3ch of name + the git state (a flex .sbt adds its full text to the chip's min-content). Account and diff stay whole. */
+.sxidc .sx .sxid > .sb{display:inline-grid;grid-template-columns:minmax(3ch,max-content);grid-auto-flow:column}
+.sxidc .sx .sxid > :is(.sfn,.snohk){flex:0 2 auto;min-width:5ch;overflow:hidden;text-overflow:ellipsis}
+.sxidn .sx .sxid > .sp{min-width:64px}
+.sxidh .sx .sxid > .sfn{display:none}   /* folder count repeats what the sibling rows of that folder already show */
 .sxw{padding:5px 0;border-bottom:1px solid #151a22}
 .sxw > :is(.sx,.sx2,.sq){cursor:pointer}
 .sxw > .sx:hover .sp{text-decoration:underline;text-underline-offset:2px}

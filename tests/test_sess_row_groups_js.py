@@ -111,24 +111,30 @@ class SessRowGroups(unittest.TestCase):
         self.assertEqual(run("console.log(JSON.stringify(SX_DROP));"), ["sz", "sk", "sm"])
 
 
-def fake(w, sp="null"):
-    """Stub element: subpixel getBoundingClientRect width, integer-rounded offsetWidth (as browsers do)."""
-    return ("{getBoundingClientRect: () => ({width: %s}), offsetWidth: Math.round(%s), offsetTop: 0, offsetHeight: 16,"
-            " firstChild: 1, querySelector: s => s === '.sp' ? %s : null}" % (w, w, sp))
+def fake(w, sp="null", sw=None):
+    """Stub element: subpixel getBoundingClientRect width, integer-rounded offsetWidth/clientWidth (as browsers do).
+    `sw` = JS expression for scrollWidth (content past a max-width:100% clip); default = no scrollWidth."""
+    return ("{getBoundingClientRect: () => ({width: %s}), offsetWidth: Math.round(%s), clientWidth: Math.round(%s),%s"
+            " offsetTop: 0, offsetHeight: 16, firstChild: 1, querySelector: s => s === '.sp' ? %s : null}"
+            % (w, w, w, " get scrollWidth(){ return %s; }," % sw if sw else "", sp))
 
 
-def fit(idw, gs=735, spw=None):
+def fit(idw, gs=735, spw=None, idsw=None):
+    """sessFit on two stub rows; returns the CSS props set on the box plus `_cls` = box classes left on."""
     return run(r"""const window = {};
-const props = {};
+const props = {}, cls = [];
 const mk = () => { const id = %s, us = %s, l = %s, gs = {clientWidth: %d};
   return {clientWidth: 791, querySelector: s => ({'.sxid': id, '.sxus': us, '.sxl': l, '.sxgs': gs})[s] || null,
           querySelectorAll: () => [id, us]}; };
 const rows = [mk(), mk()];
 const box = {clientWidth: 791, style: {setProperty: (k, v) => { props[k] = v; }, removeProperty: k => { delete props[k]; }},
-             classList: {add() {}, remove() {}}, querySelectorAll: () => rows};
+             classList: {add(...c) { c.forEach(x => cls.includes(x) || cls.push(x)); },
+                         remove(...c) { c.forEach(x => { const i = cls.indexOf(x); if(i >= 0) cls.splice(i, 1); }); }},
+             querySelectorAll: () => rows};
 sessFit(box);
+props._cls = cls;
 console.log(JSON.stringify(props));
-""" % (fake(idw, fake(spw) if spw else "null"), fake(120.2), fake(18.6), gs))
+""" % (fake(idw, fake(spw) if spw else "null", idsw), fake(120.2), fake(18.6), gs))
 
 
 def px(v):
@@ -153,6 +159,25 @@ class SessFitWidths(unittest.TestCase):
         self.assertGreaterEqual(v, 209)
         self.assertLess(v, 260)
         self.assertLessEqual(px(fit(260.0, gs=413, spw=60.0)["--sxidw"]), 262)   # short name: never above natural
+
+
+    def test_overflowing_identity_collapses(self):
+        # pinned 287px row: rect capped at 287 by max-width:100%, content 363 (name already at the 96px floor)
+        self.assertEqual(fit(287.0, gs=287, spw=96.0, idsw="363")["_cls"], ["sxidc", "sxidn", "sxidh"])
+        # levels stop at the first one that removes the overflow
+        self.assertEqual(fit(287.0, gs=287, spw=96.0, idsw="cls.includes('sxidc') ? 287 : 363")["_cls"], ["sxidc"])
+
+    def test_fitting_identity_keeps_no_collapse_class(self):
+        self.assertEqual(fit(225.4)["_cls"], [])
+        self.assertEqual(fit(260.0, gs=413, spw=147.0)["_cls"], [])
+        self.assertEqual(fit(287.0, gs=287, spw=96.0, idsw="287")["_cls"], [])   # exactly full, nothing clipped
+        self.assertEqual(fit(287.0, gs=413, spw=147.0, idsw="363")["_cls"], [])  # room once the name ellipsizes
+
+    def test_collapse_levels_have_css(self):
+        with open(os.path.join(ROOT, "web", "css", "60-sessions.css"), encoding="utf-8") as fh:
+            css = fh.read()
+        for c in fit(287.0, gs=287, spw=96.0, idsw="363")["_cls"]:   # every level (never stops overflowing)
+            self.assertRegex(css, r"\." + c + r" \.sx \.sxid > ", c)
 
 
 class SxidNoWrap(unittest.TestCase):

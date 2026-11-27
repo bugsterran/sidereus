@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: «Compacts in ~N turns» no longer counts from zero when the newest transcript part has no response yet, which showed about 20 turns for a session already at the window.
 - Sweep world: the fixture writes compact JSON transcripts, so its timeline shows bars again.
 - API: `--demo` answers `GET /api/v1/*` with 404 `{"error": "not available in demo mode"}` instead of a 200 body that does not match the v1 schema.
+- Sessions: with the drawer pinned at narrow widths, branch, folder and hooks chips shrink to «…» instead of sticking out past the row edge.
 
 ## [0.23.0] - 2026-11-25
 

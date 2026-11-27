@@ -5,10 +5,12 @@
 // ⚠Errors, diff, leftovers, context, pipeline, to-do and ↻ never hide; the name only ellipsizes.
 const SX_DROP = ['sz', 'sk', 'sm'];
 function sessFit(box){
+  // Identity collapse levels (box classes, 60-sessions.css), cumulative: chips shrink to a floor · name floor 64px · folder chip hides.
+  const SX_COLLAPSE = ['sxidc', 'sxidn', 'sxidh'];
   // ⚠Refit on width change only: a group wrap changes the box height and would loop the observer.
   if(!box._sxro && window.ResizeObserver){ box._sxro = new ResizeObserver(() => { if(box.clientWidth !== box._sxw) sessFit(box); }); box._sxro.observe(box); }
   box._sxw = box.clientWidth;
-  box.classList.remove('sxd1', 'sxd2', 'sxd3');
+  box.classList.remove('sxd1', 'sxd2', 'sxd3', ...SX_COLLAPSE);
   for(const v of ['--sxlead', '--sxidw', '--sxusw']) box.style.removeProperty(v);
   const rows = [...box.querySelectorAll('.sx')].filter(r => r.clientWidth);
   if(!rows.length) return;
@@ -23,8 +25,13 @@ function sessFit(box){
   px('--sxlead', Math.max(mx('.sxl'), wtLead));
   const gw = rows[0].querySelector('.sxgs').clientWidth;
   // ⚠The 45% cap never goes below a row's identity with its name at the 96px floor (.sp min-width): nowrap would clip chips.
+  // ⚠max-width:100% caps the identity rect at the row, so an overflowing one adds its clipped part (scrollWidth).
+  const ovf = e => (e.scrollWidth || 0) > e.clientWidth + 1;
   const need = rows.reduce((m, r) => { const id = r.querySelector('.sxid'), sp = id && id.querySelector('.sp');
-    if(!id) return m; const s = sp ? Math.max(bw(sp), sp.scrollWidth || 0) : 0; return Math.max(m, nat(id) - (s - Math.min(s, 96))); }, 0);
+    if(!id) return m; const s = sp ? Math.max(bw(sp), sp.scrollWidth || 0) : 0;
+    return Math.max(m, nat(id) + (ovf(id) ? id.scrollWidth - bw(id) : 0) - (s - Math.min(s, 96))); }, 0);
+  // Wider than the row even then: collapse level by level until no identity overflows (chips shrink, never wrap).
+  if(need > gw + 0.5) for(const c of SX_COLLAPSE){ box.classList.add(c); if(!rows.some(r => { const id = r.querySelector('.sxid'); return id && ovf(id); })) break; }
   px('--sxidw', Math.min(mx('.sxid'), Math.max(gw * 0.45, need)));
   const fits = () => rows.every(r => { const id = r.querySelector('.sxid'), t = id ? id.offsetTop : null;
     // ⚠Line test, not equal tops: baseline-aligned groups with mixed font sizes sit at different offsetTop on one line.
