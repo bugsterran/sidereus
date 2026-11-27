@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the «Since your last visit» run menu shows stage names in the UI language, and each item's tooltip carries the full label as well as the path.
 - Pipelines: the «Stage cost» budget line shows one decimal («1.2K of budget 1K») instead of rounding both numbers to whole K/M.
 - Pipelines: a token budget above the 10^12 cap is refused with a message that names the allowed range.
-- Sessions: worktree session sub-rows show the «Compacts in ~N turns» warning when 3 turns or fewer remain.
+- Sessions: worktree session sub-rows show the «Compacts in ~N turns» warning when 3 turns or fewer remain, and «No prompts» when the session runs tools without approval prompts.
 - Sessions: «Compacts in ~N turns» no longer counts from zero when the newest transcript part has no response yet, which showed about 20 turns for a session already at the window.
 - Sweep world: the fixture writes compact JSON transcripts, so its timeline shows bars again.
 - API: `--demo` answers `GET /api/v1/*` with 404 `{"error": "not available in demo mode"}` instead of a 200 body that does not match the v1 schema.

@@ -62,6 +62,7 @@ function sessWtSubHtml(kids){
       + '" title="' + esc(sessCardTip(x)) + '"><div class=sti><span class="k w">' + esc(T('Worktree')) + '</span>'
       + '<span class=v>' + esc(nm) + '</span><span class=swtst>' + esc(sessLabel(x)) + '</span>'
       + sessEtaHtml(x, true)   // compaction warning only (n<=3); the sub-line stays compact otherwise
+      + sessPmChip(x)          // no-prompt mode is gate evidence; hiding it under the main card would read as «asks for approval»
       + (typeof x.ageSec === 'number' ? '<span class=e>' + esc(AGO(ago(x.ageSec))) + '</span>' : '') + '</div></div>';
   }).join('') + '</div>' : '';
 }

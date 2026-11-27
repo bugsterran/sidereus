@@ -73,7 +73,8 @@ process.stdout.write(JSON.stringify(out));
 
 RENDER = "\n".join(js_fn(n) for n in ("brNorm", "sessWtNorm", "sessWtGroups", "sessWtAttn", "sessWtNeed", "sessWtCount", "sessWtCaret",
                                       "sessWtHeadHtml", "sessWtLead", "sessWtSubHtml", "sessWtListHtml", "sessWtAny", "sessOpenRow",
-                                      "sessEtaHtml")) + r"""
+                                      "sessEtaHtml", "sessPmChip")) + r"""
+const SESS_NOPROMPT = ['bypassPermissions', 'auto', 'dontAsk'];
 const wtFold = new Set();
 let cpFlash = '';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -101,6 +102,10 @@ out.fallback = sessWtSubHtml([S('z', {root: '/r/z', main: M, name: ''}, {branch:
 const ce = n => ({plat: 'cc', ctx: 150000, cmpEta: {n, pt: 180000, grow: 6000, k: 5}});
 out.eta2 = sessWtSubHtml([S('e', w('e'), ce(2))]); out.eta12 = sessWtSubHtml([S('e', w('e'), ce(12))]);
 out.etaHead = sessWtListHtml([S('p', main), S('e', w('e'), ce(2))]);
+out.pmBypass = sessWtSubHtml([S('m', w('m'), {plat: 'cc', pmode: 'bypassPermissions'})]);
+out.pmDefault = sessWtSubHtml([S('m', w('m'), {plat: 'cc', pmode: 'default'})]);
+out.pmOther = sessWtSubHtml([S('m', w('m'), {plat: 'pi', pmode: 'bypassPermissions'})]);
+out.pmHead = sessWtListHtml([S('p', main), S('m', w('m'), {plat: 'cc', pmode: 'auto'})]);
 cpFlash = 's:a'; out.flash = sessWtSubHtml([S('a', w('a'))]);
 out.r1 = sessOpenRow('/r/w', 'k'); out.r2 = sessOpenRow('/r/e', 'e1'); out.r3 = sessOpenRow('', 'k');
 out.opened = opened;
@@ -171,6 +176,15 @@ class SessWtSubLine(unittest.TestCase):
         self.assertIn('class="sce warn"', self.R["etaHead"])
         self.assertNotIn("sce", self.R["eta12"])
         self.assertNotIn("sce", self.R["head"])
+
+    def test_sub_line_no_prompts_chip(self):
+        # a worktree session in a no-prompt mode keeps its «No prompts» chip under the main card
+        self.assertIn("<span class=spm ", self.R["pmBypass"])
+        self.assertIn(">No prompts</span>", self.R["pmBypass"])
+        self.assertIn("<span class=spm ", self.R["pmHead"])
+        self.assertNotIn("spm", self.R["pmDefault"])
+        self.assertNotIn("spm", self.R["pmOther"])
+        self.assertNotIn("spm", self.R["head"])
 
     def test_open_row_matches_row_click(self):
         self.assertEqual([self.R["r1"], self.R["r2"], self.R["r3"]], [True, True, False])
