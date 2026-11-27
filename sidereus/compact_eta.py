@@ -199,7 +199,7 @@ def row_eta(fp, p, win, dead):
     if not on or not cw:
         return {}
     pt = min(int(win), int(cw))
-    ctx = int(p.get("ctx") or 0)
+    ctx = int(p.get("ctx") or 0) or ctxs[-1]   # ⚠tail without a response parses ctx=0; the kept series still knows it
     if pt <= ctx:
         return {}
     return {"cmpEta": {"n": int(math.ceil((pt - ctx) / grow)), "pt": pt, "grow": int(round(grow)), "k": len(diffs)}}

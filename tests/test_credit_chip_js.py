@@ -18,7 +18,7 @@ function fmtTok(n){ return n >= 1000 ? Math.round(n / 1000) + 'K' : String(n); }
 
 
 def chips(rows):
-    src = (PRE + js_fn("sessUsage") + "\nconst rows = " + json.dumps(rows) + ";"
+    src = (PRE + js_fn("sessUsage") + "\n" + js_fn("sessEtaHtml") + "\nconst rows = " + json.dumps(rows) + ";"
            "\nconsole.log(JSON.stringify(rows.map(x => sessUsage(x))));")
     r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:

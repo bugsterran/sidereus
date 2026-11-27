@@ -124,11 +124,12 @@ function visitHtml(d){
     + '<button type=button class=plvsx data-plvsx>' + esc(T('Dismiss')) + '</button></div>';
 }
 function visitStripHtml(){ return VISIT.html; }   // 48 plMainBody, right under the .pltop row
-// One popover row: folder name · sid8 · pipeline · stage, verdict, hh:mm; full path in the tooltip. All values esc(), never T().
+// One popover row: folder name · sid8 · pipeline · stage, verdict, hh:mm; label + full path in the tooltip. All values esc(), never T().
 function visitItemHtml(it, i){
   const p = String(it.proj || ''), base = p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p;
-  const lab = [base, it.sid ? it.sid.slice(0, 8) : '', it.name || '', it.stage || ''].filter(Boolean).join(' · ');
-  return '<button type=button class=plapki role=menuitem data-plvi="' + i + '" title="' + esc(p) + '"><span>' + esc(lab) + '</span>'
+  const stg = it.stage ? (typeof plgShow === 'function' ? plgShow(it.stage) : it.stage) : '';   // saved titles are Korean: show the UI-language name
+  const lab = [base, it.sid ? it.sid.slice(0, 8) : '', it.name || '', stg].filter(Boolean).join(' · ');
+  return '<button type=button class=plapki role=menuitem data-plvi="' + i + '" title="' + esc(lab + ' · ' + p) + '"><span>' + esc(lab) + '</span>'
     + (it.vd ? '<i class="plvsv ' + (it.vd === 'pass' || it.vd === 'fail' ? it.vd : 'unknown') + '">' + esc(visitVdLab(it.vd)) + '</i>' : '')
     + '<i class=plvsw>' + esc(hhmm(it.t, { date: 'other' })) + '</i></button>';
 }

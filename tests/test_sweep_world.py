@@ -83,6 +83,13 @@ class SweepWorld(unittest.TestCase):
         sw.build(self.out, 8899, NOW)
         self.assertEqual(a, _tree(self.out))
 
+    def test_transcript_lines_compact_like_real_cli(self):
+        # timeline_scan / plat_copilot find timestamps by the raw compact key, so a spaced dump shows 0 bars
+        for fp in (self.p["ask"], sw.pi_path(self.out, NOW)[1]):
+            with open(fp, encoding="utf-8") as fh:
+                ln = fh.readline()
+            self.assertIn('"timestamp":"', ln, fp)
+
     def test_metadata_only(self):
         sw.append_ask(self.out, NOW)
         n = 0

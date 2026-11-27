@@ -176,6 +176,14 @@ class VisitHtml(unittest.TestCase):
             self.assertNotIn(bad, pop)
             self.assertNotIn(bad, d["strip"])
 
+    def test_item_stage_in_ui_language_and_label_in_tooltip(self):
+        # Saved stage titles are Korean; the en menu shows plgShow's name, and the tooltip holds the cut-off label + path.
+        it = {"proj": "/w/shop", "sid": "abcdef1234567890", "name": "change", "stage": "리뷰", "vd": "pass", "t": 1000}
+        d = run("function plgShow(t){ return t === '리뷰' ? 'Review' : t; }" + out("visitItemHtml(" + json.dumps(it) + ", 0)"))
+        self.assertIn("<span>shop · abcdef12 · change · Review</span>", d)
+        self.assertIn('title="shop · abcdef12 · change · Review · /w/shop"', d)
+        self.assertNotIn("리뷰", d)
+
     def test_r2_run_click_opens_watch_and_pins_the_run(self):
         d = run("VISIT.data = visitCollect(" + json.dumps(SESS) + ", null, 900, 2000, visitDefs); mainView = 'time';"
                 " const L = visitList('runs'); visitGo(L[1]); const past = PLS.runSel; visitGo(L[0]);"

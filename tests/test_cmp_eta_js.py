@@ -19,7 +19,7 @@ function fmtTok(n){ return n >= 1000 ? Math.round(n / 1000) + 'K' : String(n); }
 
 
 def chips(rows):
-    src = (PRE + js_fn("sessUsage") + "\nconst rows = " + json.dumps(rows) + ";"
+    src = (PRE + js_fn("sessUsage") + "\n" + js_fn("sessEtaHtml") + "\nconst rows = " + json.dumps(rows) + ";"
            "\nconsole.log(JSON.stringify(rows.map(x => sessUsage(x))));")
     r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
@@ -65,6 +65,23 @@ class CmpEtaJs(unittest.TestCase):
     def test_R3_tooltip_has_pt_ctx_grow(self):
         tip = chip(chips([eta(2)])[0])[1]
         self.assertEqual(tip, "Auto-compaction at 180K tokens · now 150K tokens · ~6K tokens per turn (median of last 5)")
+
+    def test_helper_matches_row_chip(self):
+        # The sub-line helper builds the same chip the full row draws; warnOnly drops n>3 only.
+        src = (PRE + js_fn("sessUsage") + "\n" + js_fn("sessEtaHtml") + "\nconst rows = " + json.dumps([eta(2), eta(12), eta(None)]) + ";"
+               "\nconsole.log(JSON.stringify(rows.map(x => [sessUsage(x), sessEtaHtml(x), sessEtaHtml(x, true)])));")
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        (u2, e2, w2), (u12, e12, w12), (un, en, wn) = json.loads(r.stdout)
+        self.assertIn(e2, u2)
+        self.assertEqual(e2, w2)
+        self.assertIn(e12, u12)
+        self.assertTrue(e12.startswith('<span class="sce"'))
+        self.assertEqual(w12, "")
+        self.assertEqual((en, wn), ("", ""))
+        r = subprocess.run(node_e(PRE + js_fn("sessEtaHtml") + "\nconsole.log(sessEtaHtml({plat: 'cc', cmpEta: {}}));"),
+                           capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.stdout.strip(), "")   # missing n (NaN) draws nothing, as before
 
 
 if __name__ == "__main__":

@@ -129,6 +129,15 @@ class CompactEtaTest(unittest.TestCase):
     def test_R2_past_compaction_point(self):
         self.assertEqual(self.eta([420000, 440000, 460000, 480000]), {})
 
+    def test_R2_tail_without_response_falls_back_to_kept_series(self):
+        # ⚠a tail with no response parses ctx=0 while ctxs keeps the older series: n must not count from 0
+        self.settings({"autoCompactWindow": 1_000_000})
+        self.window(1_000_000)
+        ctxs = [800000, 850000, 900000, 950000, 1000000]
+        self.assertEqual(ce.row_eta(self.fp, {"sid": "s1", "ctx": 0, "ctxs": ctxs}, 1_000_000, False), {})
+        self.assertEqual(ce.row_eta(self.fp, {"sid": "s1", "ctxs": ctxs[:-1]}, 1_000_000, False),
+                         {"cmpEta": {"n": 1, "pt": 1000000, "grow": 50000, "k": 3}})
+
     def test_R4_cut_at_compact_boundary(self):
         rows = [_asst(300000, "a"), _asst(320000, "b"), _asst(340000, "c"), BOUNDARY,
                 _asst(50000, "d"), _asst(60000, "e"), _asst(70000, "f")]

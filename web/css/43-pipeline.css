@@ -252,7 +252,7 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plro .plpan.plwp{pointer-events:auto;opacity:1}   /* borrowed + Watch: the result pane stays clickable (work log) */
 .plwdirty{font-size:12px;color:var(--nx-warn,#e0a53d)}
 .pltop>.plmode{margin-left:auto}
-.pltop>.plwrun{flex:1 1 220px;min-width:0}.pltop>.plwrun>.plrunst{margin:0;max-width:none}   /* Watch head row: run progress between pickers and actions */
+.pltop>.plwrun{flex:1 1 220px;min-width:min(100%,300px)}.pltop>.plwrun>.plrunst{margin:0;max-width:none}   /* Watch head row: run progress between pickers and actions; ⚠min 300px wraps it to its own row rather than ellipsising «Run k/N ▾» + «Back to current» (★1440 en: 99px button in a 95px span) */
 html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{line-height:16px;padding:4px 0;margin:-4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plmband{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:6px 10px;border-radius:4px;background:color-mix(in srgb,var(--nx-info,#5899f3) 14%,transparent);box-shadow:inset 3px 0 0 var(--nx-info,#5899f3);color:var(--nx-t1,#cdcedc);font-size:12.5px}   /* 48k Edit mode band */
 .plmband>b{font-weight:700}

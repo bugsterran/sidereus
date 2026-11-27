@@ -126,9 +126,13 @@ function plEvalEff(eff, cost){
     const lt = C.last.tok;   // ⚠unknown (null) tokens: budget shown without percent or mark, never as within budget
     // Over rounds up, within rounds down: plain rounding showed «100%» both with and without the over mark near the line.
     const pc = lt == null || !B ? 0 : +lt > +B.tok ? Math.ceil(+lt * 100 / +B.tok) : Math.floor(+lt * 100 / +B.tok);
-    L.push(esc(TV({msg: 'Last run: {tok} · {dur}', vars: {tok: tk(lt), dur: dur((C.last.sec) | 0)}}))
-      + (!B ? '' : lt == null ? esc(' · ' + TV({msg: 'of budget {b}', vars: {b: tk(B.tok)}}))
-        : esc(' · ' + TV({msg: 'of budget {b} ({p}%)', vars: {b: tk(B.tok), p: pc}})) + (+lt > +B.tok ? ' <span class=pleover>' + esc(T('Over budget')) + '</span>' : '')));
+    // ⚠One decimal against a budget: whole K/M (fmtTok) read «1K of budget 1K (125%)». Thresholds at 999.95 so 999960 is «1M», not «1000K».
+    const f1 = (x, u) => x.toFixed(1).replace(/\.0$/, '') + u;
+    const bk = v => v == null ? '—' : +v >= 999.95e6 ? f1(+v / 1e9, 'B') : +v >= 999.95e3 ? f1(+v / 1e6, 'M') : +v >= 999.95 ? f1(+v / 1e3, 'K') : String(+v);
+    const lk = B ? bk : tk;   // no budget: the line stays as before
+    L.push(esc(TV({msg: 'Last run: {tok} · {dur}', vars: {tok: lk(lt), dur: dur((C.last.sec) | 0)}}))
+      + (!B ? '' : lt == null ? esc(' · ' + TV({msg: 'of budget {b}', vars: {b: bk(B.tok)}}))
+        : esc(' · ' + TV({msg: 'of budget {b} ({p}%)', vars: {b: bk(B.tok), p: pc}})) + (+lt > +B.tok ? ' <span class=pleover>' + esc(T('Over budget')) + '</span>' : '')));
   }
   if(B && B.m > 0) L.push(esc(TV({msg: 'Over budget in {k} of {m} runs', vars: {k: B.over | 0, m: B.m | 0}})));
   return '<table class=pleeff><caption>' + esc(T('Stage cost (last 30 days)')) + '</caption><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Median time')) + '</th><th>' + esc(T('Median tokens')) + '</th><th>' + esc(T('Share')) + '</th><th>' + esc(T('Runs')) + '</th></tr>'

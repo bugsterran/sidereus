@@ -85,7 +85,8 @@ def _turn_end(sid, cwd, t, n):
 
 
 def _line(d):
-    return json.dumps(d, sort_keys=True, separators=(", ", ": ")) + "\n"
+    # ⚠compact like real CC/pi transcripts: timeline_scan and plat_copilot search the raw `"timestamp":"` bytes
+    return json.dumps(d, sort_keys=True, separators=(",", ":")) + "\n"
 
 
 def _write(p, text, mtime):

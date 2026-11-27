@@ -28,7 +28,7 @@ function termBtnHtml(x){ return x.term ? '<button class="stm" data-term="s">›_
 function stodoChip(x){ return x.todo ? '<span class="stdc" data-todo="k">To-do 2</span>' : ''; }
 """
 FNS = "\n".join(js_fn(n) for n in ("sessIdRow", "sessGitChip", "sessUsage", "extTokChip", "sessWorkBadges",
-                                    "sessActs", "sessPlChip", "sessFit")) + "\n" + jconst("SX_DROP") + "\n"
+                                    "sessActs", "sessPlChip", "sessFit", "sessEtaHtml")) + "\n" + jconst("SX_DROP") + "\n"
 GROUPS = ("sxid", "sxus", "sxwk", "sxac")
 
 

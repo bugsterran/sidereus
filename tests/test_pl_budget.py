@@ -49,6 +49,12 @@ class Schema(unittest.TestCase):
             self.assertIn("budget", errs[0], b)
             self.assertIsNone(SC.budget_tok(P), b)
 
+    def test_r1_over_cap_names_the_range(self):
+        P = dict(PIPE, budget={"tok": 10 ** 13})
+        self.assertEqual(SC.validate(P, "flow"), ["budget: {tok: integer 1..10^12}"])
+        self.assertEqual(SC.BUDGET_TOK_MAX, 10 ** 12)   # message quotes this cap
+        self.assertEqual(SC.budget_tok(dict(PIPE, budget={"tok": 10 ** 12})), 10 ** 12)
+
 
 class Save(unittest.TestCase):
     """R1: Sidereus rewrites (stage edit = _apply, canvas = _replace) keep the budget key byte-for-byte in place."""

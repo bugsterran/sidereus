@@ -100,13 +100,7 @@ function sessUsage(x){
                       : abs+T(' (window unknown — no auto-compaction seen for this model yet, so no %)'))
     + T(' · as of the last response (cache read + write + input) · drops via auto-compaction when it hits the window');
   const ctx = k ? '<span class="sc'+ctxCls+'" title="'+esc(ctxTip)+'">'+ctxLbl+'</span>' : '';
-  // Compaction ETA: server sends cmpEta {n, pt, grow, k} only when it can predict; absent or n<1 = no chip (never a guess).
-  // ⚠Class sce, never sc/sz/sk/sm: SX_DROP would hide it at narrow widths.
-  const ce = (x.cmpEta && typeof x.cmpEta === 'object' && (!x.plat || x.plat === 'cc')) ? x.cmpEta : null;
-  const cn = ce ? Math.round(+ce.n) : 0;
-  const eta = cn >= 1 ? '<span class="sce'+(cn <= 3 ? ' warn' : '')+'" title="'+esc(TV({msg: 'Auto-compaction at {pt} tokens · now {ctx} tokens · ~{g} tokens per turn (median of last {k})',
-      vars: {pt: fmtTok(+ce.pt || 0), ctx: fmtTok(+x.ctx || 0), g: fmtTok(+ce.grow || 0), k: +ce.k || 0}}))+'">'
-    +esc(cn === 1 ? T('Compacts in ~1 turn') : TV({msg: 'Compacts in ~{n} turns', vars: {n: cn}}))+'</span>' : '';
+  const eta = sessEtaHtml(x);
   const model =x.model ? '<span class=sm>'+esc(x.model)+'</span>' : '';
   // ★Cost is **the project total** (ccusage doesn't give per-session). Two sessions of the same project
   //   show the same value, so the tooltip says so — read per session it would be false.
@@ -123,6 +117,16 @@ function sessUsage(x){
   const cred = c ? '<span class=scr title="'+esc(T(c.roll ? 'Billed to extra usage (credits) — tokens in the rolling last 5h'
       : 'Billed to extra usage (credits) — tokens in the current 5h window'))+'">'+esc(T('Credits'))+' '+esc(fmtTok(+c.tok || 0))+'</span>' : '';
   return ctx + eta + size + cost + extTokChip(x) + cred + model;
+}
+// Compaction ETA: server sends cmpEta {n, pt, grow, k} only when it can predict; absent or n<1 = no chip (never a guess).
+// ⚠Class sce, never sc/sz/sk/sm: SX_DROP would hide it at narrow widths. warnOnly (worktree sub-lines): only n<=3.
+function sessEtaHtml(x, warnOnly){
+  const ce = (x.cmpEta && typeof x.cmpEta === 'object' && (!x.plat || x.plat === 'cc')) ? x.cmpEta : null;
+  const cn = ce ? Math.round(+ce.n) : 0;
+  if(!(cn >= 1) || (warnOnly && cn > 3)) return '';   // ⚠!(>=1), not <1: a missing n is NaN
+  return '<span class="sce'+(cn <= 3 ? ' warn' : '')+'" title="'+esc(TV({msg: 'Auto-compaction at {pt} tokens · now {ctx} tokens · ~{g} tokens per turn (median of last {k})',
+      vars: {pt: fmtTok(+ce.pt || 0), ctx: fmtTok(+x.ctx || 0), g: fmtTok(+ce.grow || 0), k: +ce.k || 0}}))+'">'
+    +esc(cn === 1 ? T('Compacts in ~1 turn') : TV({msg: 'Compacts in ~{n} turns', vars: {n: cn}}))+'</span>';
 }
 // Work group: error · leftovers · pipeline chip (sessIdRow appends «To-do n», 40c).
 function sessWorkBadges(x){

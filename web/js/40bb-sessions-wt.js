@@ -51,7 +51,7 @@ function sessWtHeadHtml(gr){
     + '<span class=swthn>' + esc(gr.name) + '</span><span class=swthc>' + esc(sessWtCount(gr.kids.length)) + '</span></div>';
 }
 function sessWtLead(h, ins){ return h.replace('<span class=sxl>', '<span class=sxl>' + ins); }
-// Worktree sessions as one-line subs inside the main card (R1); metadata only: name, state, age — never targ or bodies.
+// Worktree sessions as one-line subs inside the main card (R1); metadata only: name, state, compaction warning, age — never targ or bodies.
 // ⚠Wrapped in .stree so the indent (--sxlead) and rhythm match the subagent sub-lines; never add a separate offset.
 function sessWtSubHtml(kids){
   const ks = (kids || []).filter(Boolean);
@@ -61,6 +61,7 @@ function sessWtSubHtml(kids){
     return '<div class="stiw swts' + (at ? ' swta-' + at : '') + hit + '" data-ssid="' + esc(x.sid || '') + '" data-scwd="' + esc(x.cwd || '')
       + '" title="' + esc(sessCardTip(x)) + '"><div class=sti><span class="k w">' + esc(T('Worktree')) + '</span>'
       + '<span class=v>' + esc(nm) + '</span><span class=swtst>' + esc(sessLabel(x)) + '</span>'
+      + sessEtaHtml(x, true)   // compaction warning only (n<=3); the sub-line stays compact otherwise
       + (typeof x.ageSec === 'number' ? '<span class=e>' + esc(AGO(ago(x.ageSec))) + '</span>' : '') + '</div></div>';
   }).join('') + '</div>' : '';
 }

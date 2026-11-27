@@ -47,13 +47,13 @@ def _last(html):
 class StageCostBudget(unittest.TestCase):
     def test_r2_over_budget(self):
         h = _eff("{ tok: 300000, over: 7, m: 12 }")
-        self.assertIn("of budget 300000 (106%)", _last(h))
+        self.assertIn("Last run: 318K · 61s · of budget 300K (106%)", _last(h))
         self.assertIn("<span class=pleover>Over budget</span>", _last(h))
         self.assertIn("<div>Over budget in 7 of 12 runs</div>", h)
 
     def test_r2_within_budget_no_mark(self):
         h = _eff("{ tok: 400000, over: 0, m: 5 }")
-        self.assertIn("of budget 400000 (79%)", h)   # 79.5 rounds down while within budget
+        self.assertIn("of budget 400K (79%)", h)   # 79.5 rounds down while within budget
         self.assertNotIn("pleover", h)
         self.assertIn("Over budget in 0 of 5 runs", h)
 
@@ -72,7 +72,7 @@ class StageCostBudget(unittest.TestCase):
     def test_r4_unknown_tokens_not_judged(self):
         h = _eff("{ tok: 300000, over: 1, m: 2 }", last="{ tok: null, sec: 30 }")
         line = _last(h)
-        self.assertIn("of budget 300000", line)
+        self.assertIn("of budget 300K", line)
         self.assertNotIn("%", line.split("of budget")[1])
         self.assertNotIn("pleover", h)
 
@@ -87,13 +87,22 @@ class StageCostBudget(unittest.TestCase):
             self.assertEqual(h, NO_BUD, bud)
             self.assertNotIn("budget", h.lower())
 
+    def test_budget_line_one_decimal(self):
+        # Whole K/M read «1K of budget 1K (125%)»: both numbers on the budget line keep one decimal, «.0» dropped.
+        h = _eff("{ tok: 1000, over: 1, m: 1 }", last="{ tok: 1250, sec: 61 }")
+        self.assertIn("Last run: 1.3K · 61s · of budget 1K (125%)", _last(h))
+        h = _eff("{ tok: 1200000, over: 1, m: 1 }", last="{ tok: 1400000, sec: 61 }")
+        self.assertIn("Last run: 1.4M · 61s · of budget 1.2M (117%)", _last(h))
+        h = _eff("{ tok: 999960, over: 0, m: 1 }", last="{ tok: 999, sec: 61 }")
+        self.assertIn("Last run: 999 · 61s · of budget 1M (0%)", _last(h))   # never «1000K»
+
     def test_r2_values_escaped(self):
         h = _eff("{ tok: 300000, over: '<b>', m: 3 }")
         self.assertNotIn("<b>", h)
 
     def test_r2_ko(self):
         h = _eff("{ tok: 300000, over: 7, m: 12 }", lang="ko")
-        self.assertIn("예산 300000 대비 106%", h)
+        self.assertIn("예산 300K 대비 106%", h)
         self.assertIn("예산 초과", h)
         self.assertIn("실행 12회 중 7회 예산 초과", h)
 

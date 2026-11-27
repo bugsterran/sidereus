@@ -72,12 +72,14 @@ process.stdout.write(JSON.stringify(out));
 
 
 RENDER = "\n".join(js_fn(n) for n in ("brNorm", "sessWtNorm", "sessWtGroups", "sessWtAttn", "sessWtNeed", "sessWtCount", "sessWtCaret",
-                                      "sessWtHeadHtml", "sessWtLead", "sessWtSubHtml", "sessWtListHtml", "sessWtAny", "sessOpenRow")) + r"""
+                                      "sessWtHeadHtml", "sessWtLead", "sessWtSubHtml", "sessWtListHtml", "sessWtAny", "sessOpenRow",
+                                      "sessEtaHtml")) + r"""
 const wtFold = new Set();
 let cpFlash = '';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const T = s => s, TV = o => o.msg.replace(/\{(\w+)\}/g, (_, k) => o.vars[k]);
 const AGO = t => t + ' ago', ago = s => s + 's', cpKey = x => 's:' + x.sid;
+const fmtTok = n => String(n);
 const sessLabel = x => 'L:' + (x.state || ''), sessCardTip = x => x.cwd + ' · ' + x.sid;
 // stub card: echoes the tail so the test sees what lands inside the main card
 const sessRowHtml = (x, tail) => '<div class="sxw " data-ssid="' + x.sid + '"><span class=sxl></span>' + (tail || '') + '</div>';
@@ -96,6 +98,9 @@ out.folded = sessWtListHtml(orphan);
 wtFold.clear();
 out.anyHead = sessWtAny(withHead); out.anyOrphan = sessWtAny(orphan);
 out.fallback = sessWtSubHtml([S('z', {root: '/r/z', main: M, name: ''}, {branch: 'feat<x'})]);
+const ce = n => ({plat: 'cc', ctx: 150000, cmpEta: {n, pt: 180000, grow: 6000, k: 5}});
+out.eta2 = sessWtSubHtml([S('e', w('e'), ce(2))]); out.eta12 = sessWtSubHtml([S('e', w('e'), ce(12))]);
+out.etaHead = sessWtListHtml([S('p', main), S('e', w('e'), ce(2))]);
 cpFlash = 's:a'; out.flash = sessWtSubHtml([S('a', w('a'))]);
 out.r1 = sessOpenRow('/r/w', 'k'); out.r2 = sessOpenRow('/r/e', 'e1'); out.r3 = sessOpenRow('', 'k');
 out.opened = opened;
@@ -157,6 +162,15 @@ class SessWtSubLine(unittest.TestCase):
         self.assertIn("L:", f)
         self.assertIn("5s ago", f)
         self.assertNotIn("cphit", self.R["head"])
+
+    def test_sub_line_compaction_warning(self):
+        # warning case (n<=3) shows on the sub-line inside the main card; n=12 keeps the sub-line compact
+        self.assertIn('class="sce warn"', self.R["eta2"])
+        self.assertIn(">Compacts in ~2 turns</span>", self.R["eta2"])
+        self.assertLess(self.R["eta2"].index("swtst"), self.R["eta2"].index("sce"))
+        self.assertIn('class="sce warn"', self.R["etaHead"])
+        self.assertNotIn("sce", self.R["eta12"])
+        self.assertNotIn("sce", self.R["head"])
 
     def test_open_row_matches_row_click(self):
         self.assertEqual([self.R["r1"], self.R["r2"], self.R["r3"]], [True, True, False])

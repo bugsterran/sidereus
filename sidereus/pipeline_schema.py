@@ -105,7 +105,7 @@ def validate(P, name):
     if "catch" in P and P["catch"] != "person":   # bug-fix pipeline: its runs count as «Found by a person first» (harness_person)
         errs.append('catch: "person"')
     if "budget" in P and budget_tok(P) is None:   # display-only token budget per run (pl_outcome.run_cost); never stops a run
-        errs.append("budget: {tok: positive integer}")
+        errs.append("budget: {tok: integer 1..10^12}")
     D =P.get("defaults") if isinstance(P.get("defaults"), dict) else {}
     if D.get("model") not in MODELS:
         errs.append("defaults.model: inherit|opus|sonnet|haiku")
